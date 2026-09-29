@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+
+{% block title %}Kết quả tóm tắt trích xuất — Phần 2{% endblock %}
+
+{% block nav %}
+  {% set active = 'part2' %}
+  {% include "_nav.html" with context %}
+{% endblock %}
+
+{% block head %}
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.32.0/plotly.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<header class="page-head">
+  <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:var(--space-2); margin-bottom:var(--space-2);">
+    <div style="display:flex; align-items:center; gap:var(--space-2);">
+      <span class="nav-pill-badge" style="font-size:0.75rem; padding:2px 8px;">Module 02</span>
+      <span style="font-size:var(--text-xs); color:var(--color-text-muted); font-family:var(--font-mono);">Extractive Summary Results</span>
+    </div>
+    <a href="/part2" class="back-link">
+      <span>←</span>
+      <span>Phân tích văn bản khác</span>
+    </a>
+  </div>
+  <h1>Kết quả tóm tắt trích xuất bằng LDA</h1>
+  <p>
+    Các câu đại diện tiêu biểu nhất được hệ thống trích chọn dựa trên mức độ tương đồng giữa phân bố chủ đề của từng câu 
+    với phân bố chủ đề tổng thể của toàn văn bản.
+  </p>
+</header>
+
+<main>
+  <!-- Featured Extractive Summary Card -->
+  <section>
+    <h2>Bản tóm tắt trích xuất (Các câu được chọn)</h2>
+    <div class="summary-result-card">
+      <div class="summary-header">
+        <span class="summary-badge">★ Bản tóm tắt tự động</span>
+        <button type="button" class="copy-btn" id="copySummaryBtn" aria-label="Sao chép bản tóm tắt">
+          <span id="copyIcon">📋</span>
+          <span id="copyText">Sao chép văn bản</span>
+        </button>
+      </div>
+      <p class="summary-content" id="summaryText">{{ summary }}</p>
+    </div>
+  </section>
+
+  <!-- Document Topic Distribution & Topic Keywords Grid -->
+  <section class="grid2">
+    <div>
+      <h2>Phân bố chủ đề toàn văn bản</h2>
+      <div class="chart-card-box">
+        <div id="docDistChart" style="height:320px; width:100%;"></div>
+      </div>
+    </div>
+    <div>
+      <h2>Từ khoá đại diện mỗi chủ đề</h2>
+      <div class="chart-card-box">
+        <select id="topicSelect" class="phi-selector" aria-label="Chọn chủ đề xem từ đại diện"></select>
+        <div id="topicWordsChart" style="height:270px; width:100%;"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Sentence-Topic Distribution Heatmap -->
+  <section>
+    <h2>Phân bố chủ đề theo từng câu (Câu có dấu ★ là câu được trích xuất)</h2>
+    <div class="chart-card-box">
+      <div id="heatmapChart" style="height:440px; width:100%;"></div>
+    </div>
+    <div class="note">
+      <strong>Cách đọc Heatmap:</strong> Trục tung (Y) liệt kê các câu theo thứ tự xuất hiện trong bài (các câu được chọn vào bản tóm tắt có tiền tố <strong>★</strong>). 
+      Trục hoành (X) biểu thị các chủ đề LDA. Ô màu càng đậm thể hiện câu đó tập trung mật độ chủ đề tương ứng càng cao.
+    </div>
+  </section>
+
+  <!-- Original Document Collapsible Card -->
+  <section>
+    <details class="card" style="padding:var(--space-4) var(--space-5);">
+      <summary style="cursor:pointer; font-weight:600; color:var(--color-primary); display:flex; align-items:center; gap:var(--space-2);">
+        <span>▶</span>
+        <span>Xem lại toàn bộ văn bản gốc đầu vào</span>
+      </summary>
+      <div style="margin-top:var(--space-3);">
+        <textarea id="originalTextInput" name="original_text" readonly style="background:var(--color-surface-muted); color:var(--color-text-secondary); font-size:var(--text-sm); line-height:1.6; height:180px;">{{ original_text }}</textarea>
+      </div>
+    </details>
+  </section>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const topicBarData = {{ topic_bar_json | safe }};
+  const docDistData = {{ doc_dist_json | safe }};
+  const heatmapData = {{ heatmap_json | safe }};
+
+  const fontStack = "'Be Vietnam Pro', system-ui, -apple-system, sans-serif";
+  const topicColors = ['#0D9488', '#4F46E5', '#059669', '#B45309', '#BE185D', '#2563EB'];
+
+  // 1. Render Document Topic Distribution Chart
+  Plotly.newPlot('docDistChart', [{
+    x: docDistData.labels,
+    y: docDistData.values,
+    type: 'bar',
+    marker: {
+      color: docDistData.labels.map((_, i) => topicColors[i % topicColors.length]),
+      line: { color: 'rgba(255,255,255,0.3)', width: 1 }
+    }
+  }], {
+    margin: { t: 15, l: 45, r: 15, b: 45 },
+    yaxis: { title: 'Xác suất', range: [0, 1], gridcolor: '#F3F4F6' },
+    xaxis: { gridcolor: '#F3F4F6' },
+    font: { family: fontStack, size: 12, color: '#374151' },
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor: 'rgba(0,0,0,0)'
+  }, { displayModeBar: false, responsive: true });
+
+  // 2. Setup Topic Keywords Select & Chart
+  const select = document.getElementById('topicSelect');
+  topicBarData.forEach((t, i) => {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = t.topic;
+    select.appendChild(opt);
+  });
+
+  function renderTopicWords(i) {
+    const t = topicBarData[i];
+    const currentColor = topicColors[i % topicColors.length];
+    Plotly.react('topicWordsChart', [{
+      x: t.weights.slice().reverse(),
+      y: t.words.slice().reverse(),
+      type: 'bar',
+      orientation: 'h',
+      marker: { color: currentColor }
+    }], {
+      margin: { t: 15, l: 110, r: 20, b: 35 },
+      xaxis: { title: 'Trọng số từ', gridcolor: '#F3F4F6' },
+      yaxis: { automargin: true },
+      font: { family: fontStack, size: 12, color: '#374151' },
+      paper_bgcolor: 'rgba(0,0,0,0)',
+      plot_bgcolor: 'rgba(0,0,0,0)'
+    }, { displayModeBar: false, responsive: true });
+  }
+
+  select.addEventListener('change', (e) => renderTopicWords(e.target.value));
+  renderTopicWords(0);
+
+  // 3. Render Sentence-Topic Heatmap Chart
+  const isMobile = window.innerWidth < 640;
+  const yLabels = heatmapData.sentences.map((s, i) => {
+    const star = heatmapData.selected[i] ? '★ ' : '  ';
+    const maxLen = isMobile ? 24 : 55;
+    const trimmed = s.length > maxLen ? s.slice(0, maxLen) + '…' : s;
+    return star + trimmed;
+  });
+
+  Plotly.newPlot('heatmapChart', [{
+    z: heatmapData.z,
+    x: heatmapData.topics,
+    y: yLabels,
+    type: 'heatmap',
+    colorscale: [
+      [0, '#F0FDFA'],
+      [0.3, '#CCFBF1'],
+      [0.7, '#2DD4BF'],
+      [1, '#0D9488']
+    ],
+    hoverongaps: false
+  }], {
+    margin: { t: 15, l: isMobile ? 140 : 280, r: 15, b: 45 },
+    yaxis: { automargin: true },
+    font: { family: fontStack, size: isMobile ? 10 : 11, color: '#374151' },
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor: 'rgba(0,0,0,0)'
+  }, { displayModeBar: false, responsive: true });
+
+  // 4. Copy to Clipboard Button
+  const copyBtn = document.getElementById('copySummaryBtn');
+  const copyText = document.getElementById('copyText');
+  const copyIcon = document.getElementById('copyIcon');
+  copyBtn.addEventListener('click', () => {
+    const summary = document.getElementById('summaryText').innerText;
+    navigator.clipboard.writeText(summary).then(() => {
+      copyText.textContent = 'Đã sao chép!';
+      copyIcon.textContent = '✓';
+      copyBtn.classList.add('copied');
+      setTimeout(() => {
+        copyText.textContent = 'Sao chép văn bản';
+        copyIcon.textContent = '📋';
+        copyBtn.classList.remove('copied');
+      }, 2000);
+    });
+  });
+
+  // 5. Window resize trigger for all charts
+  window.addEventListener('resize', () => {
+    Plotly.Plots.resize('docDistChart');
+    Plotly.Plots.resize('topicWordsChart');
+    Plotly.Plots.resize('heatmapChart');
+  });
+</script>
+{% endblock %}

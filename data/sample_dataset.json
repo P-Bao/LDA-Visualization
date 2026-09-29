@@ -1,0 +1,72 @@
+[
+  {
+    "id": "doc01",
+    "topic_label": "the_thao",
+    "title": "Đội tuyển quốc gia giành chiến thắng thuyết phục",
+    "content": "Đội tuyển bóng đá quốc gia vừa giành chiến thắng thuyết phục trước đối thủ mạnh trong trận đấu tối qua. Các cầu thủ thi đấu với tinh thần quyết tâm cao và phối hợp ăn ý ngay từ những phút đầu. Tiền đạo chủ lực đã ghi hai bàn thắng đẹp mắt, trong đó có một pha dứt điểm từ ngoài vòng cấm. Huấn luyện viên trưởng đánh giá cao sự tiến bộ của các cầu thủ trẻ trong đội hình. Người hâm mộ trên khắp cả nước đã đổ ra đường ăn mừng sau khi trận đấu kết thúc. Ban huấn luyện cho biết sẽ tiếp tục duy trì lối chơi tấn công trong các trận đấu sắp tới.",
+    "reference_summary": "Đội tuyển quốc gia thắng thuyết phục nhờ hai bàn thắng đẹp của tiền đạo chủ lực, huấn luyện viên đánh giá cao sự tiến bộ của cầu thủ trẻ."
+  },
+  {
+    "id": "doc02",
+    "topic_label": "the_thao",
+    "title": "Giải marathon thu hút hàng nghìn vận động viên",
+    "content": "Giải chạy marathon thường niên năm nay thu hút hơn năm nghìn vận động viên trong và ngoài nước tham gia tranh tài. Đường chạy đi qua nhiều địa danh nổi tiếng của thành phố, tạo cơ hội quảng bá du lịch địa phương. Ban tổ chức đã chuẩn bị chu đáo về nước uống, y tế và an ninh dọc theo tuyến đường. Nhà vô địch năm nay đã về đích với thành tích ấn tượng, phá kỷ lục giải đấu được thiết lập từ ba năm trước. Nhiều vận động viên phong trào cũng bày tỏ sự hào hứng khi lần đầu hoàn thành cự ly marathon đầy đủ. Giải đấu được kỳ vọng sẽ trở thành sự kiện thể thao thường niên quan trọng của thành phố.",
+    "reference_summary": "Giải marathon thu hút hơn năm nghìn vận động viên, nhà vô địch phá kỷ lục giải đấu và sự kiện được kỳ vọng trở thành hoạt động thường niên."
+  },
+  {
+    "id": "doc03",
+    "topic_label": "cong_nghe",
+    "title": "Ứng dụng trí tuệ nhân tạo trong sản xuất",
+    "content": "Nhiều doanh nghiệp sản xuất trong nước đang đẩy mạnh ứng dụng trí tuệ nhân tạo vào dây chuyền để tăng năng suất và giảm sai sót. Hệ thống camera thông minh kết hợp thuật toán học máy có thể phát hiện lỗi sản phẩm nhanh hơn nhiều lần so với kiểm tra thủ công. Một số nhà máy đã ghi nhận mức giảm chi phí vận hành đáng kể sau khi triển khai giải pháp tự động hoá. Các chuyên gia cho rằng đầu tư ban đầu cho công nghệ này khá cao nhưng sẽ mang lại lợi ích lâu dài. Doanh nghiệp cũng cần đào tạo lại nhân viên để thích nghi với quy trình sản xuất mới. Xu hướng này được dự báo sẽ tiếp tục lan rộng sang nhiều ngành công nghiệp khác trong những năm tới.",
+    "reference_summary": "Doanh nghiệp sản xuất ứng dụng trí tuệ nhân tạo để tăng năng suất, giảm chi phí, dù cần đầu tư ban đầu và đào tạo lại nhân viên."
+  },
+  {
+    "id": "doc04",
+    "topic_label": "cong_nghe",
+    "title": "Phần mềm quản lý dữ liệu ra mắt phiên bản mới",
+    "content": "Một công ty công nghệ trong nước vừa ra mắt phiên bản mới của phần mềm quản lý dữ liệu dành cho doanh nghiệp vừa và nhỏ. Phiên bản này bổ sung tính năng phân tích dữ liệu tự động, giúp người dùng không cần kiến thức lập trình vẫn có thể tạo báo cáo trực quan. Đội ngũ phát triển cho biết đã mất hơn một năm để xây dựng lại kiến trúc phần mềm nhằm tăng tốc độ xử lý. Nhiều khách hàng thử nghiệm phản hồi tích cực về giao diện thân thiện và khả năng tuỳ biến linh hoạt. Công ty dự kiến mở rộng thị trường sang khu vực Đông Nam Á trong năm tới. Giá bán của phần mềm được điều chỉnh theo quy mô sử dụng của từng doanh nghiệp.",
+    "reference_summary": "Công ty công nghệ ra mắt phần mềm quản lý dữ liệu mới với tính năng phân tích tự động, dự kiến mở rộng thị trường sang Đông Nam Á."
+  },
+  {
+    "id": "doc05",
+    "topic_label": "giao_duc",
+    "title": "Trường học thí điểm mô hình học cá nhân hoá",
+    "content": "Một số trường trung học đang thí điểm mô hình học cá nhân hoá, cho phép học sinh học theo tốc độ và lộ trình riêng phù hợp với năng lực. Giáo viên sử dụng phần mềm để theo dõi tiến độ học tập của từng học sinh và điều chỉnh bài giảng phù hợp. Phụ huynh học sinh bày tỏ sự ủng hộ vì con em có thể tập trung vào những phần kiến thức còn yếu. Tuy nhiên, một số giáo viên cho rằng mô hình này đòi hỏi nhiều thời gian chuẩn bị tài liệu hơn so với cách dạy truyền thống. Sở giáo dục địa phương cho biết sẽ đánh giá hiệu quả sau một học kỳ thí điểm. Nếu thành công, mô hình có thể được nhân rộng ra nhiều trường học khác trong khu vực.",
+    "reference_summary": "Trường học thí điểm mô hình học cá nhân hoá giúp học sinh học theo năng lực riêng, dù đòi hỏi giáo viên chuẩn bị nhiều hơn."
+  },
+  {
+    "id": "doc06",
+    "topic_label": "giao_duc",
+    "title": "Kỳ thi tuyển sinh đại học có nhiều thay đổi",
+    "content": "Kỳ thi tuyển sinh đại học năm nay có nhiều thay đổi về cấu trúc đề thi nhằm giảm áp lực học thuộc lòng cho thí sinh. Đề thi được thiết kế theo hướng đánh giá năng lực vận dụng kiến thức vào tình huống thực tế thay vì chỉ kiểm tra ghi nhớ. Nhiều thí sinh cho biết ban đầu khá bỡ ngỡ nhưng sau khi làm quen thì thấy cách ra đề mới thú vị hơn. Các trung tâm luyện thi cũng phải điều chỉnh phương pháp giảng dạy để bắt kịp xu hướng ra đề. Bộ giáo dục cam kết sẽ tiếp tục hoàn thiện đề thi qua các năm dựa trên phản hồi thực tế. Kết quả kỳ thi sẽ được công bố sớm hơn dự kiến hai tuần so với năm trước.",
+    "reference_summary": "Kỳ thi tuyển sinh đại học đổi cấu trúc đề theo hướng đánh giá năng lực vận dụng, các trung tâm luyện thi phải điều chỉnh cách dạy."
+  },
+  {
+    "id": "doc07",
+    "topic_label": "suc_khoe",
+    "title": "Bệnh viện ứng dụng công nghệ chẩn đoán sớm",
+    "content": "Một bệnh viện lớn vừa đưa vào sử dụng hệ thống chẩn đoán hình ảnh hỗ trợ bởi trí tuệ nhân tạo, giúp phát hiện sớm các dấu hiệu bất thường trên phim chụp. Bác sĩ cho biết công nghệ này giúp rút ngắn thời gian đọc kết quả và giảm tỷ lệ bỏ sót tổn thương nhỏ. Hệ thống được huấn luyện trên hàng trăm nghìn hình ảnh y tế trước khi đưa vào sử dụng thực tế. Bệnh nhân tham gia thử nghiệm bày tỏ sự yên tâm hơn khi có thêm một lớp kiểm tra bằng máy móc. Các chuyên gia lưu ý công nghệ chỉ đóng vai trò hỗ trợ, quyết định cuối cùng vẫn thuộc về bác sĩ điều trị. Bệnh viện có kế hoạch mở rộng ứng dụng công nghệ này sang nhiều chuyên khoa khác.",
+    "reference_summary": "Bệnh viện ứng dụng trí tuệ nhân tạo để chẩn đoán hình ảnh sớm, rút ngắn thời gian đọc kết quả nhưng bác sĩ vẫn quyết định cuối cùng."
+  },
+  {
+    "id": "doc08",
+    "topic_label": "suc_khoe",
+    "title": "Khuyến cáo phòng bệnh mùa nắng nóng",
+    "content": "Cơ quan y tế địa phương vừa đưa ra khuyến cáo phòng bệnh trong bối cảnh thời tiết nắng nóng kéo dài những ngày qua. Người dân được khuyên nên hạn chế ra ngoài vào khung giờ nắng gắt và uống đủ nước trong ngày. Trẻ nhỏ và người cao tuổi là hai nhóm đối tượng dễ bị ảnh hưởng bởi nhiệt độ cao nhất. Số ca nhập viện vì say nắng và rối loạn tiêu hoá đã tăng nhẹ so với cùng kỳ năm trước. Các bác sĩ cũng nhắc nhở người dân bảo quản thực phẩm cẩn thận để tránh ngộ độc trong thời tiết nóng ẩm. Dự báo thời tiết cho biết đợt nắng nóng có thể còn kéo dài thêm khoảng một tuần nữa.",
+    "reference_summary": "Cơ quan y tế khuyến cáo phòng bệnh mùa nắng nóng, đặc biệt với trẻ nhỏ và người cao tuổi, do số ca nhập viện tăng nhẹ."
+  },
+  {
+    "id": "doc09",
+    "topic_label": "kinh_te",
+    "title": "Xuất khẩu nông sản tăng trưởng khả quan",
+    "content": "Kim ngạch xuất khẩu nông sản trong quý vừa qua ghi nhận mức tăng trưởng khả quan so với cùng kỳ năm trước. Nhiều mặt hàng chủ lực như gạo, cà phê và trái cây đều có giá bán tốt hơn nhờ nhu cầu thị trường quốc tế phục hồi. Doanh nghiệp xuất khẩu cho biết đã chủ động đa dạng hoá thị trường để giảm phụ thuộc vào một vài đối tác truyền thống. Tuy nhiên chi phí vận chuyển và logistics vẫn là thách thức lớn ảnh hưởng đến lợi nhuận. Bộ công thương cho biết sẽ hỗ trợ doanh nghiệp xúc tiến thương mại tại các thị trường mới nổi. Giới phân tích dự báo đà tăng trưởng xuất khẩu nông sản có thể duy trì đến hết năm nếu không có biến động lớn.",
+    "reference_summary": "Xuất khẩu nông sản tăng trưởng khả quan nhờ giá tốt và đa dạng hoá thị trường, dù chi phí logistics vẫn là thách thức."
+  },
+  {
+    "id": "doc10",
+    "topic_label": "kinh_te",
+    "title": "Lãi suất ngân hàng có xu hướng giảm",
+    "content": "Nhiều ngân hàng thương mại vừa công bố điều chỉnh giảm lãi suất huy động ở hầu hết các kỳ hạn. Động thái này được xem là tín hiệu tích cực nhằm hỗ trợ doanh nghiệp tiếp cận nguồn vốn vay với chi phí thấp hơn. Giới chuyên gia nhận định lãi suất giảm có thể kích thích hoạt động đầu tư và tiêu dùng trong những tháng cuối năm. Một số người gửi tiết kiệm tỏ ra băn khoăn khi lợi suất tiền gửi không còn hấp dẫn như trước. Ngân hàng nhà nước cho biết sẽ tiếp tục theo dõi diễn biến thị trường để có điều chỉnh chính sách phù hợp. Các doanh nghiệp nhỏ kỳ vọng đây là cơ hội để mở rộng sản xuất kinh doanh với chi phí vốn rẻ hơn.",
+    "reference_summary": "Ngân hàng giảm lãi suất huy động nhằm hỗ trợ doanh nghiệp vay vốn rẻ hơn, kỳ vọng kích thích đầu tư và tiêu dùng."
+  }
+]

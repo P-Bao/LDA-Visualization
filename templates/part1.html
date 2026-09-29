@@ -1,0 +1,282 @@
+{% extends "base.html" %}
+
+{% block title %}Phần 1 — Mô phỏng thuật toán Collapsed Gibbs Sampling LDA{% endblock %}
+
+{% block nav %}
+  {% set active = 'part1' %}
+  {% include "_nav.html" with context %}
+{% endblock %}
+
+{% block head %}
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.32.0/plotly.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<header class="page-head">
+  <div style="display:flex; align-items:center; gap:var(--space-2); margin-bottom:var(--space-2);">
+    <span class="nav-pill-badge" style="font-size:0.75rem; padding:2px 8px;">Module 01</span>
+    <span style="font-size:var(--text-xs); color:var(--color-text-muted); font-family:var(--font-mono);">Collapsed Gibbs Sampling</span>
+  </div>
+  <h1>Phần 1 — Mô phỏng thuật toán từng bước</h1>
+  <p>
+    Tập ngữ liệu gồm 8 câu tiếng Việt rút gọn thuộc 2 chủ đề rõ rệt (thể thao / công nghệ). 
+    Thuật toán Gibbs Sampling được tự cài đặt từ đầu ở <code>core/gibbs_lda.py</code> (không dùng gensim) 
+    để từng bước gán nhãn, cập nhật xác suất đều có thể quan sát trực tiếp qua vòng lặp.
+  </p>
+</header>
+
+<main>
+  <!-- Parameter Control Bar -->
+  <section>
+    <h2>Tham số mô phỏng</h2>
+    <div class="param-card">
+      <form method="GET" action="/part1" class="param-form">
+        <div class="param-group">
+          <label for="num_topics">Số chủ đề K (2 – 4)</label>
+          <input type="number" id="num_topics" name="num_topics" min="2" max="4" value="{{ num_topics }}" required>
+        </div>
+        <div class="param-group">
+          <label for="num_iterations">Số vòng lặp Gibbs (5 – 60)</label>
+          <input type="number" id="num_iterations" name="num_iterations" min="5" max="60" value="{{ num_iterations }}" required>
+        </div>
+        <div>
+          <button type="submit" class="btn btn-primary param-btn">
+            <span>Chạy lại mô phỏng</span>
+            <span>↻</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- Interactive Player & Word Assignments -->
+  <section>
+    <h2>Tua qua từng bước thuật toán</h2>
+    <div class="player-card">
+      <div class="player-toolbar">
+        <button type="button" id="playBtn" class="btn btn-primary player-btn">▶ Phát</button>
+        <div class="player-slider-wrap">
+          <input type="range" id="stepSlider" class="player-slider" min="0" max="{{ num_iterations }}" value="0" step="1" aria-label="Vòng lặp Gibbs">
+        </div>
+        <div id="stepLabel" class="player-step-badge">Vòng lặp: 0 (khởi tạo ngẫu nhiên)</div>
+      </div>
+
+      <div id="assignmentsView" class="assignments-list"></div>
+    </div>
+  </section>
+
+  <!-- Theta & Phi Charts Grid -->
+  <section class="grid2">
+    <div>
+      <h2>Phân bố văn bản–chủ đề θ (theta)</h2>
+      <div class="chart-card-box">
+        <div id="thetaChart" style="height:340px; width:100%;"></div>
+      </div>
+    </div>
+    <div>
+      <h2>Từ khoá theo chủ đề (top từ, xác suất φ)</h2>
+      <div class="chart-card-box">
+        <div id="phiSelectWrap">
+          <select id="phiSelect" class="phi-selector" aria-label="Chọn chủ đề xem top từ khoá"></select>
+        </div>
+        <div id="phiChart" style="height:290px; width:100%;"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Log-likelihood Convergence Curve -->
+  <section>
+    <h2>Đường cong hội tụ (log-likelihood ước lượng)</h2>
+    <div class="chart-card-box">
+      <div id="llChart" style="height:280px; width:100%;"></div>
+    </div>
+    <div class="note">
+      <strong>Ghi chú lý thuyết:</strong> Đây là log-likelihood ước lượng dựa trên phân bố θ và φ ở mỗi vòng lặp — 
+      minh hoạ xu hướng mô hình hội tụ dần khớp với ngữ liệu qua quá trình lấy mẫu Gibbs lặp, 
+      không phải giá trị log-likelihood tuyệt đối của bài toán suy luận Bayes đầy đủ.
+    </div>
+  </section>
+
+  <!-- Cleaned Tokens Table Details -->
+  <section>
+    <details class="card" style="padding:var(--space-4) var(--space-5);">
+      <summary style="cursor:pointer; font-weight:600; color:var(--color-primary); display:flex; align-items:center; gap:var(--space-2);">
+        <span>▶</span>
+        <span>Xem bảng chi tiết token đã tách &amp; làm sạch của từng câu</span>
+      </summary>
+      <div style="margin-top:var(--space-4); overflow-x:auto;">
+        <table class="token-detail-table">
+          <thead>
+            <tr>
+              <th style="width:48px;">#</th>
+              <th style="width:42%;">Câu gốc</th>
+              <th>Token sau tách từ + loại stopword</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in sentences %}
+            <tr>
+              <td><strong>{{ loop.index }}</strong></td>
+              <td style="color:var(--color-text-secondary); line-height:1.5;">{{ s }}</td>
+              <td>
+                <div style="display:flex; flex-wrap:wrap; gap:3px;">
+                  {% for tok in tokens[loop.index0] %}
+                    <span class="pill">{{ tok }}</span>
+                  {% endfor %}
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </details>
+  </section>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const history = {{ history_json | safe }};
+const sentences = {{ sentences | tojson }};
+const tokens = {{ tokens | tojson }};
+const numTopics = {{ num_topics }};
+
+// Direction B palette for topic categorical mapping
+const topicColors = ['#0D9488', '#4F46E5', '#059669', '#B45309', '#BE185D', '#2563EB'];
+const fontStack = "'Be Vietnam Pro', system-ui, -apple-system, sans-serif";
+
+const slider = document.getElementById('stepSlider');
+const stepLabel = document.getElementById('stepLabel');
+const assignmentsView = document.getElementById('assignmentsView');
+
+function renderAssignments(step) {
+  const snap = history[step];
+  let html = '';
+  sentences.forEach((s, d) => {
+    html += '<div class="sentence-item">';
+    html += '  <span class="sentence-tag">Câu ' + (d + 1) + '</span>';
+    html += '  <div class="sentence-tokens-row">';
+    tokens[d].forEach((tok, i) => {
+      const topic = snap.assignments[d][i];
+      const color = topicColors[topic % topicColors.length];
+      html += '    <span class="token-chip" style="background:' + color + ';" title="Chủ đề ' + (topic + 1) + '">' + tok + '</span>';
+    });
+    html += '  </div>';
+    html += '</div>';
+  });
+  assignmentsView.innerHTML = html;
+  stepLabel.textContent = step === 0
+    ? 'Vòng lặp: 0 (khởi tạo ngẫu nhiên)'
+    : 'Vòng lặp: ' + step + ' / ' + (history.length - 1);
+}
+
+function renderTheta(step) {
+  const snap = history[step];
+  const traces = [];
+  for (let k = 0; k < numTopics; k++) {
+    traces.push({
+      x: sentences.map((_, d) => 'C' + (d + 1)),
+      y: snap.theta.map(row => row[k]),
+      name: 'Chủ đề ' + (k + 1),
+      type: 'bar',
+      marker: { color: topicColors[k % topicColors.length] }
+    });
+  }
+  Plotly.react('thetaChart', traces, {
+    barmode: 'stack',
+    margin: { t: 15, l: 42, r: 15, b: 45 },
+    yaxis: { range: [0, 1], title: 'Xác suất θ', gridcolor: '#F3F4F6' },
+    xaxis: { gridcolor: '#F3F4F6' },
+    font: { family: fontStack, size: 12, color: '#374151' },
+    legend: { orientation: 'h', y: -0.22, font: { size: 11 } },
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor: 'rgba(0,0,0,0)'
+  }, { displayModeBar: false, responsive: true });
+}
+
+const phiSelect = document.getElementById('phiSelect');
+for (let k = 0; k < numTopics; k++) {
+  const opt = document.createElement('option');
+  opt.value = k;
+  opt.textContent = 'Chủ đề ' + (k + 1);
+  phiSelect.appendChild(opt);
+}
+
+function renderPhi(step) {
+  const snap = history[step];
+  const k = parseInt(phiSelect.value || 0);
+  const topicWords = snap.phi[k];
+  Plotly.react('phiChart', [{
+    x: topicWords.map(p => p[1]).reverse(),
+    y: topicWords.map(p => p[0]).reverse(),
+    type: 'bar',
+    orientation: 'h',
+    marker: { color: topicColors[k % topicColors.length] }
+  }], {
+    margin: { t: 15, l: 110, r: 20, b: 35 },
+    xaxis: { title: 'Xác suất φ', gridcolor: '#F3F4F6' },
+    yaxis: { automargin: true },
+    font: { family: fontStack, size: 12, color: '#374151' },
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor: 'rgba(0,0,0,0)'
+  }, { displayModeBar: false, responsive: true });
+}
+
+phiSelect.addEventListener('change', () => renderPhi(parseInt(slider.value)));
+
+function renderLL() {
+  Plotly.newPlot('llChart', [{
+    x: history.map(h => h.iteration),
+    y: history.map(h => h.log_likelihood),
+    mode: 'lines+markers',
+    line: { color: '#0D9488', width: 2.5, shape: 'spline' },
+    marker: { size: 6, color: '#0F766E' }
+  }], {
+    margin: { t: 15, l: 55, r: 20, b: 45 },
+    xaxis: { title: 'Vòng lặp Gibbs', gridcolor: '#F3F4F6' },
+    yaxis: { title: 'log-likelihood', gridcolor: '#F3F4F6' },
+    font: { family: fontStack, size: 12, color: '#374151' },
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor: 'rgba(0,0,0,0)'
+  }, { displayModeBar: false, responsive: true });
+}
+
+function renderStep(step) {
+  renderAssignments(step);
+  renderTheta(step);
+  renderPhi(step);
+}
+
+slider.addEventListener('input', (e) => renderStep(parseInt(e.target.value)));
+
+let playing = false, playTimer = null;
+document.getElementById('playBtn').addEventListener('click', function () {
+  playing = !playing;
+  this.textContent = playing ? '⏸ Dừng' : '▶ Phát';
+  if (playing) {
+    this.style.background = '#DC2626';
+    playTimer = setInterval(() => {
+      let v = parseInt(slider.value);
+      v = (v + 1) > parseInt(slider.max) ? 0 : v + 1;
+      slider.value = v;
+      renderStep(v);
+    }, 600);
+  } else {
+    this.style.background = '';
+    clearInterval(playTimer);
+  }
+});
+
+// Window resize auto trigger for all Plotly charts
+window.addEventListener('resize', () => {
+  Plotly.Plots.resize('thetaChart');
+  Plotly.Plots.resize('phiChart');
+  Plotly.Plots.resize('llChart');
+});
+
+// Initial render
+renderStep(0);
+renderLL();
+</script>
+{% endblock %}

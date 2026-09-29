@@ -1,0 +1,134 @@
+/**
+ * design tokens - lda tiếng việt
+ * Hướng B: Energetic & Accessible (Teal + Indigo + Be Vietnam Pro)
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  /* Surface & Background */
+  --color-bg: #FAFAFA;
+  --color-surface: #FFFFFF;
+  --color-surface-hover: #F8FAFC;
+  --color-surface-subtle: #F0FDF4;
+  --color-surface-accent: #EEF2FF;
+  --color-surface-muted: #F3F4F6;
+
+  /* Borders */
+  --color-border: #E5E7EB;
+  --color-border-subtle: #F3F4F6;
+  --color-border-strong: #D1D5DB;
+
+  /* Primary Brand (Teal) */
+  --color-primary-50: #F0FDFA;
+  --color-primary-100: #CCFBF1;
+  --color-primary-200: #99F6E4;
+  --color-primary-500: #14B8A6;
+  --color-primary: #0D9488;       /* Teal-600 */
+  --color-primary-hover: #0F766E; /* Teal-700 */
+  --color-primary-dark: #115E59;  /* Teal-800 */
+  --color-primary-contrast: #FFFFFF;
+
+  /* Accent (Indigo) */
+  --color-accent: #4F46E5;        /* Indigo-600 */
+  --color-accent-hover: #4338CA;
+  --color-accent-light: #EEF2FF;
+  --color-accent-contrast: #FFFFFF;
+
+  /* Status Colors */
+  --color-success: #059669;
+  --color-success-bg: #ECFDF5;
+  --color-success-border: #A7F3D0;
+
+  --color-warning: #B45309;
+  --color-warning-bg: #FFFBEB;
+  --color-warning-border: #FDE68A;
+
+  --color-danger: #DC2626;
+  --color-danger-bg: #FEF2F2;
+  --color-danger-border: #FECACA;
+
+  /* Text & Contrast (WCAG AA compliant) */
+  --color-text: #111827;          /* Gray-900 (15.5:1 on #FAFAFA) */
+  --color-text-secondary: #4B5563;/* Gray-600 (7.1:1 on #FAFAFA) */
+  --color-text-muted: #6B7280;    /* Gray-500 (4.6:1 on #FAFAFA) */
+  --color-text-subtle: #9CA3AF;
+
+  /* Typography */
+  --font-sans: 'Be Vietnam Pro', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  --text-xs: 0.75rem;     /* 12px */
+  --text-sm: 0.84375rem;  /* 13.5px */
+  --text-base: 0.9375rem; /* 15px */
+  --text-lg: 1.0625rem;   /* 17px */
+  --text-xl: 1.25rem;     /* 20px */
+  --text-2xl: 1.5rem;     /* 24px */
+  --text-3xl: 1.875rem;   /* 30px */
+
+  --leading-none: 1;
+  --leading-tight: 1.25;
+  --leading-snug: 1.375;
+  --leading-normal: 1.55;
+  --leading-relaxed: 1.625;
+
+  --font-light: 300;
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+
+  /* Spacing Scale (4px base) */
+  --space-0-5: 0.125rem; /* 2px */
+  --space-1: 0.25rem;    /* 4px */
+  --space-1-5: 0.375rem; /* 6px */
+  --space-2: 0.5rem;     /* 8px */
+  --space-2-5: 0.625rem; /* 10px */
+  --space-3: 0.75rem;    /* 12px */
+  --space-4: 1rem;       /* 16px */
+  --space-5: 1.25rem;    /* 20px */
+  --space-6: 1.5rem;     /* 24px */
+  --space-8: 2rem;       /* 32px */
+  --space-10: 2.5rem;    /* 40px */
+  --space-12: 3rem;      /* 48px */
+  --space-16: 4rem;      /* 64px */
+
+  --container-max: 1120px;
+  --nav-height: 64px;
+
+  /* Border Radius */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.06), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+  --shadow-glow-focus: 0 0 0 3px rgba(13, 148, 136, 0.2);
+
+  /* Categorical Colors for LDA Topics (accessible contrast on white & dark) */
+  --topic-1: #0D9488; /* Teal */
+  --topic-2: #4F46E5; /* Indigo */
+  --topic-3: #059669; /* Emerald */
+  --topic-4: #B45309; /* Amber */
+  --topic-5: #BE185D; /* Rose/Pink */
+  --topic-6: #2563EB; /* Blue */
+
+  /* Transitions */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Backward Compatibility Aliases for Existing CSS */
+  --paper: var(--color-bg);
+  --ink: var(--color-text);
+  --moss: var(--color-primary);
+  --moss-dark: var(--color-primary-hover);
+  --clay: var(--color-accent);
+  --line: var(--color-border);
+}

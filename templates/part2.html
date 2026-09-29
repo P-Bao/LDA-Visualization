@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}Phần 2 — Ứng dụng tóm tắt văn bản trích xuất bằng LDA{% endblock %}
+
+{% block nav %}
+  {% set active = 'part2' %}
+  {% include "_nav.html" with context %}
+{% endblock %}
+
+{% block content %}
+<header class="page-head">
+  <div style="display:flex; align-items:center; gap:var(--space-2); margin-bottom:var(--space-2);">
+    <span class="nav-pill-badge" style="font-size:0.75rem; padding:2px 8px;">Module 02</span>
+    <span style="font-size:var(--text-xs); color:var(--color-text-muted); font-family:var(--font-mono);">Extractive Summarization</span>
+  </div>
+  <h1>Phần 2 — Tóm tắt văn bản trích xuất bằng LDA</h1>
+  <p>
+    Áp dụng thuật toán LDA (sử dụng thư viện gensim tối ưu) vào bài toán tóm tắt: 
+    mỗi câu trong tài liệu được xem như một "tiểu văn bản" để suy diễn phân bố chủ đề, 
+    sau đó xếp hạng và trích xuất các câu mang tính đại diện cao nhất cho toàn bộ văn bản.
+  </p>
+</header>
+
+<main>
+  {% if error %}
+    <div class="alert alert-danger" role="alert">
+      <span>⚠</span>
+      <span>{{ error }}</span>
+    </div>
+  {% endif %}
+
+  <section>
+    <h2>Cấu hình &amp; Nhập văn bản</h2>
+    <div class="card-form-box">
+      <form method="POST" action="/part2/analyze" id="summaryForm">
+        <div>
+          <div class="textarea-toolbar">
+            <label for="text" style="margin:0;">Văn bản tiếng Việt cần phân tích</label>
+            <span class="textarea-char-count" id="textStats">Đoạn văn bản mẫu</span>
+          </div>
+          <textarea id="text" name="text" required placeholder="Nhập hoặc dán văn bản tiếng Việt tại đây...">{{ sample_text }}</textarea>
+          <div class="form-helper-text">
+            Mẹo: Văn bản có từ 5 câu trở lên sẽ cho phân bố chủ đề ổn định và kết quả tóm tắt rõ rệt nhất.
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:var(--space-5);">
+          <div>
+            <label for="num_topics">Số chủ đề K (LDA)</label>
+            <input type="number" id="num_topics" name="num_topics" min="2" max="15" value="4" required>
+            <div class="form-helper-text">Số lượng chủ đề tiềm ẩn (khuyên dùng: 3 – 6)</div>
+          </div>
+          <div>
+            <label for="top_k">Số câu trong bản tóm tắt (k)</label>
+            <input type="number" id="top_k" name="top_k" min="1" max="10" value="3" required>
+            <div class="form-helper-text">Số câu tiêu biểu cần trích xuất</div>
+          </div>
+        </div>
+
+        <div style="margin-top:var(--space-6); display:flex; gap:var(--space-3); flex-wrap:wrap; align-items:center;">
+          <button type="submit" class="btn btn-primary" style="margin-top:0;">
+            <span>Phân tích &amp; Tóm tắt trích xuất</span>
+            <span>⚡</span>
+          </button>
+          <button type="button" class="btn btn-secondary" id="resetSampleBtn" style="margin-top:0;">
+            <span>Khôi phục văn bản mẫu</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <div class="note">
+    <strong>Lưu ý học thuật:</strong> Văn bản càng dài (nhiều câu, nhiều từ vựng) thì phân bố chủ đề của mô hình LDA càng ổn định. 
+    Với các văn bản ngắn dưới 10 câu, ma trận từ–chủ đề có thể bị thưa — đây là đặc tính cố hữu của phương pháp mô hình hoá chủ đề không giám sát.
+  </div>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const textarea = document.getElementById('text');
+const statsLabel = document.getElementById('textStats');
+const sampleTextDefault = {{ sample_text | tojson }};
+
+function updateStats() {
+  const content = textarea.value.trim();
+  const charLen = content.length;
+  const wordCount = content ? content.split(/\s+/).length : 0;
+  const sentenceCount = content ? content.split(/[.?!]+/).filter(Boolean).length : 0;
+  statsLabel.textContent = `${sentenceCount} câu • ${wordCount} từ • ${charLen} ký tự`;
+}
+
+textarea.addEventListener('input', updateStats);
+updateStats();
+
+document.getElementById('resetSampleBtn').addEventListener('click', () => {
+  textarea.value = sampleTextDefault;
+  updateStats();
+});
+</script>
+{% endblock %}

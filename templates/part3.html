@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Phần 3 — Thử nghiệm &amp; Đánh giá ROUGE + Coherence{% endblock %}
+
+{% block nav %}
+  {% set active = 'part3' %}
+  {% include "_nav.html" with context %}
+{% endblock %}
+
+{% block content %}
+<header class="page-head">
+  <div style="display:flex; align-items:center; gap:var(--space-2); margin-bottom:var(--space-2);">
+    <span class="nav-pill-badge" style="font-size:0.75rem; padding:2px 8px;">Module 03</span>
+    <span style="font-size:var(--text-xs); color:var(--color-text-muted); font-family:var(--font-mono);">Benchmark &amp; Evaluation</span>
+  </div>
+  <h1>Phần 3 — Thử nghiệm trên tập văn bản &amp; Đánh giá</h1>
+  <p>
+    Chạy thử nghiệm tự động toàn bộ pipeline tóm tắt LDA trên tập ngữ liệu báo chí tiếng Việt, 
+    đối sánh trực tiếp với hai baseline chuẩn mực (<strong>Lead-k</strong> và <strong>Random-k</strong>) 
+    theo thang đo <strong>ROUGE-1, ROUGE-2, ROUGE-L F1</strong> so với tóm tắt tham chiếu (ground truth), 
+    đồng thời đo lường chỉ số <strong>Topic Coherence (u_mass)</strong> trên toàn tập văn bản.
+  </p>
+</header>
+
+<main>
+  {% if error %}
+    <div class="alert alert-danger" role="alert">
+      <span>⚠</span>
+      <span>{{ error }}</span>
+    </div>
+  {% endif %}
+
+  <section>
+    <h2>Cấu hình thử nghiệm</h2>
+    <div class="card-form-box">
+      <form method="POST" action="/part3/run" id="experimentForm">
+        <div>
+          <label for="source">Nguồn tập dữ liệu (Dataset Source)</label>
+          <select id="source" name="source" style="padding:0.75rem 0.85rem; font-weight:var(--font-medium);">
+            <option value="vietnews" selected>harouzie/vietnews — Hugging Face (article → abstract; tải trực tiếp)</option>
+            <option value="sample">Bộ mẫu 10 bài báo đóng gói sẵn (Offline &amp; Chạy nhanh)</option>
+          </select>
+          <div class="form-helper-text" id="sourceHelper">
+            Tập Vietnews gồm các bài báo tiếng Việt thực tế được chuẩn hóa kèm bản tóm tắt tham chiếu do biên tập viên viết.
+          </div>
+        </div>
+
+        <div class="form-row-3col" style="margin-top:var(--space-5);">
+          <div class="form-col" id="limitWrap">
+            <label for="limit">Số văn bản thử nghiệm</label>
+            <input type="number" id="limit" name="limit" min="5" max="1000" value="50" required>
+            <div class="form-helper-text" id="limitHelper">Khuyên dùng 20 – 50 bài để có kết quả đại diện và thời gian chạy tối ưu</div>
+          </div>
+          <div class="form-col">
+            <label for="num_topics">Số chủ đề K (LDA)</label>
+            <input type="number" id="num_topics" name="num_topics" min="2" max="20" value="5" required>
+            <div class="form-helper-text">Số chủ đề tiềm ẩn cho mô hình LDA</div>
+          </div>
+          <div class="form-col">
+            <label for="top_k">Số câu trích xuất k</label>
+            <input type="number" id="top_k" name="top_k" min="1" max="6" value="3" required>
+            <div class="form-helper-text">Độ dài tóm tắt đối sánh (mặc định k=3)</div>
+          </div>
+        </div>
+
+        <div style="margin-top:var(--space-6); display:flex; gap:var(--space-3); flex-wrap:wrap; align-items:center;">
+          <button type="submit" class="btn btn-primary" id="submitExpBtn" style="margin-top:0;">
+            <span>Chạy thử nghiệm &amp; Đánh giá ROUGE</span>
+            <span>⚡</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <div class="note">
+    <strong>Lưu ý về hiệu năng:</strong> Lần đầu chọn Vietnews sẽ tải dữ liệu từ Hugging Face (cần <code>pip install datasets</code>), sau đó tự động lưu cache vào <code>data/cache/</code> để các lần chạy sau hoạt động hoàn toàn offline. 
+    Chạy 50 bài mất khoảng 1 – 2 phút (do tiến hành tiền xử lý tách từ + huấn luyện LDA từng bài). 
+    Đối với các đợt thực nghiệm lớn hơn (&gt;100 bài), bạn có thể chạy qua terminal lệnh: <code>python run_experiment.py --source vietnews --limit 300</code>.
+  </div>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const sourceSelect = document.getElementById('source');
+const limitInput = document.getElementById('limit');
+const limitHelper = document.getElementById('limitHelper');
+const sourceHelper = document.getElementById('sourceHelper');
+
+sourceSelect.addEventListener('change', (e) => {
+  if (e.target.value === 'sample') {
+    limitInput.disabled = true;
+    limitInput.value = 10;
+    limitHelper.textContent = 'Bộ mẫu cố định 10 bài báo thuộc 5 chủ đề đa dạng.';
+    sourceHelper.textContent = 'Bộ dữ liệu offline 10 bài tích hợp sẵn trong repo, cho kết quả ngay lập tức.';
+  } else {
+    limitInput.disabled = false;
+    limitInput.value = 50;
+    limitHelper.textContent = 'Khuyên dùng 20 – 50 bài để có kết quả đại diện và thời gian chạy tối ưu';
+    sourceHelper.textContent = 'Tập Vietnews gồm các bài báo tiếng Việt thực tế kèm tóm tắt tham chiếu do biên tập viên viết.';
+  }
+});
+</script>
+{% endblock %}

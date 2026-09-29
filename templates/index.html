@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}LDA tiếng Việt — Mô phỏng · Ứng dụng · Thử nghiệm{% endblock %}
+
+{% block nav %}
+  {% set active = 'home' %}
+  {% include "_nav.html" with context %}
+{% endblock %}
+
+{% block content %}
+<main class="home-main">
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="hero-badge">
+      <span class="badge-dot"></span>
+      <span class="badge-text">Phân tích &amp; Khai phá dữ liệu văn bản tiếng Việt</span>
+    </div>
+    <h1 class="hero-title">Khám phá Thuật toán LDA qua Trực quan hoá &amp; Thực nghiệm</h1>
+    <p class="hero-desc">
+      Hệ thống tích hợp 3 module nghiên cứu hoàn chỉnh: quan sát cơ chế <strong>Collapsed Gibbs Sampling</strong> từng bước từ số 0, 
+      ứng dụng vào <strong>tóm tắt trích xuất</strong> câu tiếng Việt, và tiến hành <strong>thực nghiệm đối sánh ROUGE</strong> trên tập ngữ liệu báo chí chuẩn.
+    </p>
+
+    <!-- Pipeline Flow Overview -->
+    <div class="pipeline-flow" aria-label="Luồng xử lý kiến trúc hệ thống">
+      <div class="flow-step">
+        <span class="step-num">01</span>
+        <div class="step-content">
+          <span class="step-title">Tiền xử lý văn bản</span>
+          <span class="step-sub">Tách từ &amp; Stopwords tiếng Việt</span>
+        </div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <span class="step-num">02</span>
+        <div class="step-content">
+          <span class="step-title">Mô hình hoá chủ đề</span>
+          <span class="step-sub">Gibbs Sampling &amp; Gensim LDA</span>
+        </div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <span class="step-num">03</span>
+        <div class="step-content">
+          <span class="step-title">Tóm tắt &amp; Đánh giá</span>
+          <span class="step-sub">ROUGE F1 &amp; Topic Coherence</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 Main Modules Grid -->
+  <section class="modules-section">
+    <div class="modules-grid">
+      <!-- Part 1 Card -->
+      <article class="module-card">
+        <div class="module-card-header">
+          <div class="module-chip chip-teal">Phần 1 • Tương tác</div>
+          <span class="module-tag">Collapsed Gibbs</span>
+        </div>
+        <h2 class="module-title">Mô phỏng thuật toán từng bước</h2>
+        <p class="module-desc">
+          Thuật toán Gibbs Sampling được tự cài đặt từ đầu (không dùng thư viện ngoài) trên 8 câu tiếng Việt thuộc 2 chủ đề rõ rệt. 
+          Sử dụng thanh trượt tương tác hoặc tính năng phát tự động để quan sát sự chuyển dịch phân bố chủ đề của từng từ, 
+          ma trận xác suất văn bản–chủ đề θ (theta), và đường cong log-likelihood hội tụ qua từng vòng lặp.
+        </p>
+        <div class="module-features">
+          <span class="feat-pill">8 câu kiểm chứng</span>
+          <span class="feat-pill">Tua vòng lặp 0→60</span>
+          <span class="feat-pill">Phân bố θ &amp; φ</span>
+        </div>
+        <div class="module-footer">
+          <a class="btn btn-primary" href="/part1">
+            <span>Xem mô phỏng</span>
+            <span class="btn-arrow">→</span>
+          </a>
+        </div>
+      </article>
+
+      <!-- Part 2 Card -->
+      <article class="module-card">
+        <div class="module-card-header">
+          <div class="module-chip chip-indigo">Phần 2 • Ứng dụng</div>
+          <span class="module-tag">Extractive Summarization</span>
+        </div>
+        <h2 class="module-title">Ứng dụng tóm tắt văn bản trích xuất</h2>
+        <p class="module-desc">
+          Dán một văn bản tiếng Việt bất kỳ. Hệ thống phân tích từng câu thành một văn bản con, dùng mô hình LDA tối ưu 
+          để xác định phân bố chủ đề của toàn bài và từng câu đơn lẻ, sau đó áp dụng độ đo tương đồng khoảng cách xác suất 
+          để chọn lọc ra k câu đại diện tiêu biểu nhất cấu thành bản tóm tắt trích xuất.
+        </p>
+        <div class="module-features">
+          <span class="feat-pill">Tùy biến số câu tóm tắt</span>
+          <span class="feat-pill">Heatmap câu–chủ đề</span>
+          <span class="feat-pill">Từ khóa đặc trưng</span>
+        </div>
+        <div class="module-footer">
+          <a class="btn btn-primary" href="/part2">
+            <span>Thử tóm tắt</span>
+            <span class="btn-arrow">→</span>
+          </a>
+        </div>
+      </article>
+
+      <!-- Part 3 Card (Full Width) -->
+      <article class="module-card module-card-highlight">
+        <div class="module-card-header">
+          <div class="module-chip chip-emerald">Phần 3 • Thực nghiệm</div>
+          <span class="module-tag">Benchmark &amp; Evaluation</span>
+        </div>
+        <div class="module-body-highlight">
+          <div>
+            <h2 class="module-title">Thử nghiệm &amp; Đánh giá ROUGE + Coherence</h2>
+            <p class="module-desc">
+              Chạy tự động toàn bộ pipeline tóm tắt trên tập dữ liệu chuẩn (tập Vietnews từ Hugging Face hoặc bộ 10 bài báo offline). 
+              Hệ thống đối sánh kết quả trực tiếp với 2 phương pháp chuẩn mực (Lead-k và Random-k) dựa trên thang đo học thuật 
+              <strong>ROUGE-1, ROUGE-2, ROUGE-L F1</strong>, đồng thời đo lường chỉ số <strong>Topic Coherence (u_mass)</strong> cấp tập văn bản.
+            </p>
+            <div class="module-features">
+              <span class="feat-pill">Hỗ trợ tập Vietnews / Mẫu sẵn</span>
+              <span class="feat-pill">ROUGE-1/2/L F1</span>
+              <span class="feat-pill">Biểu đồ so sánh 3 phương pháp</span>
+              <span class="feat-pill">Ma trận tương quan văn bản</span>
+            </div>
+          </div>
+          <div class="module-highlight-action">
+            <a class="btn btn-primary" href="/part3">
+              <span>Chạy thử nghiệm</span>
+              <span class="btn-arrow">→</span>
+            </a>
+          </div>
+        </div>
+      </article>
+    </div>
+  </section>
+</main>
+{% endblock %}

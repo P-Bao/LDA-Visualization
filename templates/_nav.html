@@ -1,0 +1,22 @@
+<nav class="topnav" aria-label="Điều hướng chính">
+  <div class="nav-brand-container">
+    <a href="/" class="nav-brand">
+      <span class="brand-badge">LDA</span>
+      <span class="brand-text">Tiếng Việt</span>
+    </a>
+  </div>
+  <div class="nav-links">
+    <a href="/" class="nav-link {{ 'active' if active=='home' else '' }}">
+      Trang chủ
+    </a>
+    <a href="/part1" class="nav-link {{ 'active' if active=='part1' else '' }}">
+      <span class="nav-pill-badge">P1</span> Mô phỏng Gibbs
+    </a>
+    <a href="/part2" class="nav-link {{ 'active' if active=='part2' else '' }}">
+      <span class="nav-pill-badge">P2</span> Ứng dụng tóm tắt
+    </a>
+    <a href="/part3" class="nav-link {{ 'active' if active=='part3' else '' }}">
+      <span class="nav-pill-badge">P3</span> Thử nghiệm &amp; Đánh giá
+    </a>
+  </div>
+</nav>
