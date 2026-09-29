@@ -1,120 +1,182 @@
-# LDA cho văn bản tiếng Việt — Mô phỏng · Ứng dụng · Thử nghiệm
+# LDA cho văn bản tiếng Việt — Mô phỏng · Tóm tắt Video · Ứng dụng · Thử nghiệm
 
-Dự án web (Flask) chia làm 3 phần theo đúng yêu cầu:
+Dự án Bài tập lớn môn **Phân tích & Khai phá dữ liệu văn bản**: Nghiên cứu, tự cài đặt và ứng dụng mô hình **Latent Dirichlet Allocation (LDA)** trên ngữ liệu tiếng Việt, xây dựng ứng dụng web Flask gồm 4 phân hệ chính:
 
-- **Phần 1 — Mô phỏng thuật toán**: cài đặt LDA từ đầu bằng Collapsed Gibbs Sampling (không dùng thư viện có sẵn), chạy trên 8 câu tiếng Việt nhỏ, cho phép tua qua từng vòng lặp để xem thuật toán "học" dần dần.
-- **Phần 2 — Ứng dụng**: dùng LDA (bản gensim, cùng thuật toán nhưng suy luận bằng variational inference để chạy nhanh trên dữ liệu thật) để xây hệ thống tóm tắt văn bản trích xuất.
-- **Phần 3 — Thử nghiệm**: chạy pipeline ở Phần 2 trên một tập 10 văn bản tiếng Việt (5 chủ đề), đánh giá bằng ROUGE-1/2/L và topic coherence.
+- **Phần 1 — Mô phỏng thuật toán Gibbs (`/part1`)**: Tự cài đặt LDA từ đầu bằng **Collapsed Gibbs Sampling** (thuần Python, không dùng thư viện ngoài), chạy demo trên 8 câu tiếng Việt / 2 chủ đề rõ rệt, cho phép tua qua từng vòng lặp.
+- **Phần 1' — Tóm tắt dạng "Video" từng bước (`/summarize`)**: Người dùng nhập **một đoạn văn bản bất kỳ**, hệ thống mô phỏng toàn bộ hành trình từ đoạn văn tới bản tóm tắt qua **11 cảnh trực quan** dạng video player (phát, tạm dừng, tua bước, thanh trượt scrubber, hiện công thức với số thực, chấm điểm và chọn câu MMR).
+- **Phần 2 — Ứng dụng tóm tắt văn bản trích xuất (`/part2`)**: Ứng dụng LDA (suy luận biến phân qua gensim) để trích xuất các câu đại diện cho văn bản người dùng nhập.
+- **Phần 3 — Thử nghiệm & Đánh giá (`/part3`)**: Chạy thử nghiệm trên tập dữ liệu tiếng Việt (offline mẫu hoặc tập `vietnews` từ Hugging Face), so sánh với các baseline Lead-k, Random-k và đánh giá bằng ROUGE-1/2/L cùng Topic Coherence ($u\_mass$).
 
-## 1. Cài đặt & chạy
+---
+
+## 1. Cài đặt & Khởi chạy
+
+### Yêu cầu môi trường
+- Python 3.10+ (đã kiểm thử ổn định trên Python 3.12 và 3.13)
+- Trình duyệt hiện đại (hỗ trợ HTML5, SVG, CSS Grid/Flexbox)
+
+### Các bước chạy
 
 ```bash
+# 1. Tạo và kích hoạt môi trường ảo
 python -m venv venv
-source venv/bin/activate        # Windows: venv\Scripts\activate
+
+# Windows (Command Prompt hoặc PowerShell):
+venv\Scripts\activate
+# Linux / macOS:
+source venv/bin/activate
+
+# 2. Cài đặt các thư viện cần thiết
 pip install -r requirements.txt
+
+# 3. Chạy ứng dụng web Flask
 python app.py
 ```
 
-Mở `http://127.0.0.1:5000` — trang chủ có link tới cả 3 phần.
+Mở trình duyệt truy cập: **`http://127.0.0.1:5000`**
 
-`underthesea` sẽ tự tải một số dữ liệu tách từ tiếng Việt ở lần chạy đầu
-(cần internet lần đầu).
+---
 
 ## 2. Cấu trúc thư mục
 
 ```
 lda_vi_project/
-├── app.py                     # Flask app: route cho cả 3 phần
-├── core/
-│   ├── nlp_utils.py            # Tách câu, tách từ tiếng Việt, lọc stopword (dùng chung)
-│   ├── gibbs_lda.py             # LDA tự cài đặt (Collapsed Gibbs Sampling) — PHẦN 1
-│   ├── toy_data.py              # 8 câu mẫu, 2 chủ đề rõ rệt — dữ liệu cho PHẦN 1
-│   ├── lda_pipeline.py          # LDA bằng gensim + tóm tắt trích xuất — PHẦN 2 & 3
-│   ├── evaluation.py            # ROUGE-N / ROUGE-L tự cài đặt — PHẦN 3
-│   ├── dataset_loader.py        # Nạp dataset: bundled offline hoặc harouzie/vietnews (HF) — PHẦN 3
-│   └── experiment.py            # Quy trình thử nghiệm: LDA vs Lead-k vs Random-k + coherence — PHẦN 3
-├── data/
-│   ├── stopwords_vi.txt
-│   └── sample_dataset.json      # 10 văn bản, 5 chủ đề, có tóm tắt tham chiếu
-├── templates/                   # Giao diện Flask (Jinja2) cho từng trang
-├── scripts/download_stopwords.py  # Tải & gộp stopword tiếng Việt công khai
-├── run_experiment.py          # Chạy Phần 3 bằng dòng lệnh, xuất results/*.json, *.csv
-├── static/style.css
-└── requirements.txt
+├── app.py                           # Ứng dụng Flask: định tuyến cho cả 4 phân hệ
+├── requirements.txt                 # Danh sách gói phụ thuộc (Flask, numpy, gensim, scipy...)
+├── README.md                        # Tài liệu hướng dẫn dự án
+├── run_experiment.py                # Chạy thử nghiệm Phần 3 từ dòng lệnh
+│
+├── core/                            # Mã nguồn lõi xử lý thuật toán
+│   ├── gibbs_lda.py                 # Collapsed Gibbs Sampling gốc (GIỮ NGUYÊN 100%)
+│   ├── trace_lda.py                 # Lớp con TracedGibbsLDA kế thừa GibbsLDA, ghi trace từng token
+│   ├── vi_lexicon.py                # Từ điển từ ghép tiếng Việt & stopword (thuần Python)
+│   ├── summarizer_preprocess.py     # Tiền xử lý: tách câu an toàn, ghép từ longest-match, ma trận đếm
+│   ├── summarizer_pipeline.py       # Pipeline tóm tắt: chấm điểm 0.6cos+0.4p, MMR lambda=0.7
+│   ├── sample_text.py               # Đoạn văn bản tiếng Việt mẫu chuẩn
+│   ├── toy_data.py                  # Dữ liệu 8 câu demo cho Phần 1
+│   ├── lda_pipeline.py              # LDA bằng gensim cho Phần 2 & 3
+│   ├── evaluation.py                # Tự cài đặt chỉ số ROUGE-1, ROUGE-2, ROUGE-L
+│   ├── dataset_loader.py            # Nạp dữ liệu VietNews hoặc bộ mẫu offline
+│   ├── experiment.py                # Pipeline thử nghiệm & so sánh đa phương pháp
+│   └── nlp_utils.py                 # Tiện ích NLP dùng chung
+│
+├── static/                          # Tài nguyên giao diện tĩnh (CSS, JS)
+│   ├── css/
+│   │   ├── tokens.css               # Hệ thống Design Tokens (màu sắc, typography, spacing)
+│   │   └── summarize.css            # Scoped CSS cho Video Player Phần 1' (chuẩn WCAG AAA)
+│   ├── js/
+│   │   └── summarize-player.js      # Engine Video Player 11 cảnh thuần JS + SVG
+│   └── style.css                    # CSS giao diện chung của website
+│
+├── templates/                       # Giao diện HTML Jinja2
+│   ├── base.html                    # Layout khung cơ bản
+│   ├── _nav.html                    # Thanh điều hướng thống nhất
+│   ├── index.html                   # Trang chủ điều hướng 4 phân hệ
+│   ├── part1.html                   # Giao diện Phần 1 (Mô phỏng 8 câu cũ)
+│   ├── summarize.html               # Giao diện Phần 1' (Tóm tắt video từng bước)
+│   ├── part2.html & part2_result.html # Giao diện Phần 2 (Ứng dụng)
+│   └── part3.html & part3_result.html # Giao diện Phần 3 (Thử nghiệm & Đánh giá)
+│
+├── scripts/                         # Các script hỗ trợ & kiểm thử tự động
+│   ├── test_summarizer.py           # Test suite tự động cho Phần 1' (5 tiêu chí a -> e)
+│   └── download_stopwords.py        # Tải danh sách stopword mở rộng
+│
+└── data/                            # Ngữ liệu mẫu và từ điển stopword
+    ├── sample_dataset.json          # 10 văn bản mẫu 5 chủ đề
+    └── stopwords_vi.txt             # Danh sách từ dừng tiếng Việt
 ```
 
-## 3. Phần 1 — Mô phỏng thuật toán chi tiết
+---
 
-File `core/gibbs_lda.py` cài đặt LDA bằng **Collapsed Gibbs Sampling** từ con số 0 (không dùng gensim/sklearn), để mọi trạng thái nội bộ đều lộ ra:
+## 3. Chi tiết Phân hệ 1': Tóm tắt dạng Video Player (`/summarize`)
 
-- Mỗi từ trong mỗi câu có một biến ẩn `z` = chủ đề được gán cho từ đó.
-- Ở mỗi vòng lặp (sweep), thuật toán lần lượt xét từng từ: **rút** gán chủ đề hiện tại ra khỏi 3 bộ đếm (`n_dk`, `n_kw`, `n_k`), rồi **lấy mẫu lại** chủ đề mới theo công thức xác suất có điều kiện chuẩn của LDA, sau đó **cập nhật** lại bộ đếm.
-- Sau mỗi vòng lặp, chương trình chụp lại (snapshot) toàn bộ trạng thái: gán chủ đề của từng từ, ước lượng θ (phân bố văn bản–chủ đề), ước lượng φ (top từ mỗi chủ đề), và một log-likelihood ước lượng để vẽ đường hội tụ.
-- Trang `/part1` nạp toàn bộ lịch sử các snapshot này về trình duyệt một lần, rồi dùng thanh trượt (và nút Phát để tự động chạy) để "tua" qua từng bước — người dùng thấy rõ màu chủ đề của từng từ đổi dần và ổn định lại theo đúng 2 chủ đề thể thao / công nghệ sau vài vòng lặp.
+### 3.1 Nguyên tắc thiết kế & Tự cài đặt
+* **Không sửa `core/gibbs_lda.py`:** Demo 8 câu cũ tại `/part1` chạy độc lập, kết quả đồng nhất với cùng seed.
+* **Kế thừa sạch trong `core/trace_lda.py`:** Lớp `TracedGibbsLDA` kế thừa `GibbsLDA`, mở rộng phương thức `sweep_with_trace()` để ghi lại từng token (doc $d$, từ $w$, chủ đề cũ $k_{old}$, các số đếm sau rút, xác suất chuẩn hoá/chưa chuẩn hoá, số ngẫu nhiên $r$, chủ đề mới $k_{new}$). Thứ tự và số lần gọi `self.rng.random()` được giữ y hệt giúp kết quả có tính tái lập hoàn toàn.
+* **Thuần Python:** Toàn bộ tiền xử lý (tách câu, gộp từ ghép tiếng Việt bằng longest match, lọc stopword) trong `core/summarizer_preprocess.py` và `core/vi_lexicon.py` không dùng bất kỳ thư viện NLP ngoại vi nào (không gensim, underthesea, pyvi, nltk, sklearn).
 
-## 4. Phần 2 — Ứng dụng tóm tắt trích xuất
+### 3.2 Hành trình 11 Cảnh của Video Player
+1. **Cảnh 1 — Văn bản gốc:** Hiển thị toàn văn đoạn văn bản kèm thẻ thống kê số câu, số từ, độ dài.
+2. **Cảnh 2 — Tách câu:** Tách văn bản thành danh sách câu có đánh số thứ tự; bảo vệ số thập phân (`3.5`) và viết tắt (`tp.`, `v.v.`), xử lý ngắt dòng kiểu hard-wrap. Mỗi câu hợp lệ là một document trong LDA.
+3. **Cảnh 3 — Tách từ & làm sạch:** Ghép từ ghép tiếng Việt theo nguyên tắc Longest Match dựa trên từ điển (`xe điện`, `môi trường`, `ô nhiễm không khí`...); stopword mờ dần rồi biến mất.
+4. **Cảnh 4 — Từ điển & Heatmap câu × từ:** Bảng ma trận tần suất đếm số lần xuất hiện của từng từ nội dung trong từng câu.
+5. **Cảnh 5 — Khởi tạo Gibbs:** Gán nhãn chủ đề ngẫu nhiên ban đầu cho tất cả các token; hiển thị bảng $n(d, k)$, bảng $n(k)$ và bảng $n(k, w)$ (từ vựng $\times$ chủ đề).
+6. **Cảnh 6 — Gibbs chi tiết vòng 1 (từng từ):** Đi qua từng token, hiển thị công thức suy diễn toán học với **SỐ THỰC**, thanh xác suất có điều kiện, token đổi màu khi gán lại và bộ đếm cập nhật động.
+7. **Cảnh 7 — Gibbs tăng tốc (vòng 2..N):** Tích hợp thanh trượt scrubber tua nhanh qua lại giữa các vòng lặp, token đổi màu dần và đồ thị log-likelihood ước lượng minh hoạ xu hướng hội tụ.
+8. **Cảnh 8 — Kết quả chủ đề:** Bảng thẻ chủ đề kèm nhãn đặc trưng (top 2–3 từ), xác suất $\phi$ và phân bố $\theta$ của từng câu.
+9. **Cảnh 9 — Chấm điểm câu:** Hiển thị công thức chấm điểm kết hợp $\cos(\theta_d, \pi)$ và xác suất sinh từ $\phi$, có hệ số phạt độ dài câu quá ngắn/dài.
+10. **Cảnh 10 — Lựa chọn câu bằng MMR:** Thuật toán Maximal Marginal Relevance chọn lọc từng bước ($\lambda = 0.7$), giải thích chi tiết lý do chọn và lý do loại bỏ (trùng ý hoặc điểm thấp).
+11. **Cảnh 11 — Bản tóm tắt hoàn chỉnh:** Các câu không được chọn mờ đi, câu được chọn chuyển động mượt mà bay vào khung tóm tắt theo **đúng thứ tự xuất hiện gốc** trong bài; hiển thị thẻ KPI tỉ lệ nén ($3.22\times$, giảm ~69% dung lượng).
 
-File `core/lda_pipeline.py::summarize_extractive()`:
+### 3.3 Công thức Toán học áp dụng
 
-1. Tách văn bản thành câu, tách từ + lọc stopword từng câu.
-2. Coi **mỗi câu là một "document"** trong corpus để huấn luyện LDA (gensim) — nhờ vậy suy ra được phân bố chủ đề riêng cho từng câu.
-3. Phân bố chủ đề của **toàn văn bản** = suy luận trên BOW gộp của mọi câu.
-4. Chấm điểm mỗi câu: `score = topic_dist(câu) · topic_dist(toàn văn bản)` (tích vô hướng hai vector xác suất) — câu càng phản ánh đúng các chủ đề chiếm ưu thế trong văn bản thì điểm càng cao.
-5. Chọn `top_k` câu điểm cao nhất, sắp lại theo thứ tự xuất hiện gốc.
+1. **Lấy mẫu Gibbs có điều kiện (Collapsed Gibbs Sampling):**
+   $$P(z_i = k \mid \mathbf{z}_{\neg i}, \mathbf{w}, \alpha, \beta) \propto \frac{n_{d, k}^{\neg i} + \alpha}{\sum_{k'} (n_{d, k'}^{\neg i} + \alpha)} \cdot \frac{n_{k, w}^{\neg i} + \beta}{\sum_{w'} (n_{k, w'}^{\neg i} + \beta)}$$
 
-Đây chính xác là ứng dụng thực tế của thuật toán vừa mô phỏng ở Phần 1 — chỉ khác là dùng cách suy luận tham số hiệu quả hơn (variational Bayes trong gensim) thay vì Gibbs sampling từng bước một, để xử lý được văn bản dài trong thời gian ngắn.
+2. **Phân bố chủ đề toàn đoạn $\pi$:**
+   $$\pi_k = \frac{\sum_{d=1}^D n_d \cdot \theta_{d, k}}{\sum_{d=1}^D n_d}$$
 
-## 5. Phần 3 — Thử nghiệm & đánh giá
+3. **Chấm điểm câu:**
+   $$\text{Score}(d) = \left[ 0.6 \cdot \cos(\theta_d, \pi) + 0.4 \cdot \frac{1}{|d|} \sum_{w \in d} \left( \sum_{k=1}^K \pi_k \cdot \phi_{k, w} \right) \right] \times \text{LengthFactor}(d)$$
 
-### 5.1 Dữ liệu
-Hai nguồn, chọn trên giao diện `/part3` hoặc bằng `--source` ở dòng lệnh:
+4. **Lựa chọn đa dạng MMR (Maximal Marginal Relevance):**
+   $$\text{MMR}(d) = \lambda \cdot \text{Rel}(d) - (1 - \lambda) \cdot \max_{s \in S} \cos(\theta_d, \theta_s) \quad (\lambda = 0.7)$$
 
-- **`vietnews`** — bộ công khai `harouzie/vietnews` trên Hugging Face, các cột `guid, title, abstract, article`. Ánh xạ: `article` → nội dung cần tóm tắt, `abstract` → tóm tắt tham chiếu. Loader (`core/dataset_loader.py`) lấy ngẫu nhiên N bài (cố định seed=42 để tái lập), bỏ bài quá ngắn (< 4 câu) hoặc quá dài (> 6000 ký tự), thay dấu `_` bằng khoảng trắng phòng khi văn bản đã tách từ sẵn, và lưu cache vào `data/cache/` để lần sau chạy offline.
-- **`sample`** — 10 bài tự viết trong `data/sample_dataset.json`, chạy offline, dùng để thử nhanh.
+---
+
+## 4. Kiểm thử tự động (Test Suite)
+
+Dự án cung cấp bộ kiểm thử tự động toàn diện trong file [`scripts/test_summarizer.py`](scripts/test_summarizer.py). Chạy kiểm thử:
 
 ```bash
-pip install datasets
-python run_experiment.py --source vietnews --limit 200 --topics 5 --top-k 3
+python scripts/test_summarizer.py
 ```
-Kết quả ghi ra `results/summary.json` (điểm trung bình, coherence) và `results/per_doc.csv` (điểm từng bài, từng phương pháp) để đưa vào báo cáo.
 
-**Stopword:** chạy `python scripts/download_stopwords.py` để tải danh sách công khai (stopwords/vietnamese-stopwords) và gộp vào `data/stopwords_vi.txt`. Từ ghép viết cách bằng khoảng trắng được tự đổi thành `_` khi nạp để khớp đầu ra của underthesea.
+### 5 tiêu chí kiểm thử bắt buộc:
+* **(a) Demo gốc không đổi:** Mô hình `GibbsLDA` chạy trên 8 câu với `seed=42`, `iterations=20` cho log-likelihood đạt đúng $-162.437$.
+* **(b) Tính tương thích lớp con:** `TracedGibbsLDA` và `GibbsLDA` cho cùng trạng thái gán chủ đề và bộ đếm sau vòng 1 và vòng 20 khi cùng seed; thoả mãn bất biến tổng token: $\sum n_{dk} = \sum n_{kw} = \sum n_k = N_{tokens}$.
+* **(c) Tính tái lập (Reproducibility):** Cùng seed cho kết quả JSON trung gian giống hệt nhau $100\%$. Khác seed cho kết quả phân bố khác biệt.
+* **(d) Độ hội tụ:** Log-likelihood ước lượng tăng dần qua các vòng lặp.
+* **(e) Bản tóm tắt chuẩn xác:** Kiểm tra trích xuất đúng 3 câu tiêu biểu của đoạn mẫu (chi phí pin, trạm sạc, và định hướng tương lai), giữ nguyên thứ tự gốc.
 
-### 5.2 Các phép đánh giá
+---
 
-0. **Baseline so sánh:** tóm tắt LDA được so với **Lead-k** (k câu đầu bài, rất
-   mạnh với văn bản báo chí) và **Random-k** (k câu ngẫu nhiên). Random-k là mốc
-   dưới, Lead-k là mốc trên cần vượt hoặc bàn luận nếu không vượt được. Lưu ý
-   `abstract` của Vietnews là tóm tắt tóm lược (abstractive) nên ROUGE của mọi
-   phương pháp trích xuất đều ở mức khiêm tốn.
+## 5. Đặc tả API Endpoint
 
-1. **Chất lượng tóm tắt (ROUGE-1 / ROUGE-2 / ROUGE-L)** — so khớp n-gram
-   / chuỗi con chung dài nhất giữa bản tóm tắt máy tạo và tóm tắt tham
-   chiếu do người viết, cho từng văn bản và trung bình cả tập.
-   Cài đặt trong `core/evaluation.py`, không phụ thuộc thư viện ngoài để
-   chạy offline; đây là công thức recall/precision/F1 chuẩn nhưng là bản
-   **đơn giản hoá**, không phải bản sao chính xác của công cụ ROUGE gốc.
-2. **Độ mạch lạc của chủ đề (topic coherence, chỉ số u_mass)** — huấn
-   luyện một mô hình LDA riêng ở **cấp độ cả tập văn bản** (mỗi bài báo =
-   1 document, khác với Phần 2 là mỗi câu = 1 document), rồi dùng
-   `gensim.models.CoherenceModel` để đo mức độ các từ trong cùng 1 chủ đề
-   có hay xuất hiện cùng nhau trong corpus hay không. Dùng `u_mass` vì chỉ
-   cần chính corpus huấn luyện, không cần thêm dữ liệu tham chiếu ngoài.
+### `POST /api/summarize`
+Nhận dữ liệu văn bản và tham số, trả về toàn bộ dữ liệu trung gian của 11 cảnh:
 
-### 5.3 Đọc kết quả thế nào
-- Bảng ROUGE trung bình + biểu đồ cột F1 theo từng văn bản: đánh giá bản
-  tóm tắt máy tạo "giống" tóm tắt người viết đến mức nào.
-- Heatmap phân bố chủ đề của từng văn bản: so với cột "Chủ đề gốc" (nhãn
-  gán sẵn khi tạo dữ liệu) để xem trực quan LDA có tách đúng nhóm chủ đề
-  hay không — đây là một cách đánh giá định tính bổ sung, độc lập với ROUGE.
-- Chỉ số coherence: càng gần 0 (ít âm) thì chủ đề càng mạch lạc.
+* **Request Header:** `Content-Type: application/json`
+* **Request Body:**
+  ```json
+  {
+    "text": "Xe điện đang trở thành xu hướng phát triển mạnh mẽ...",
+    "K": 2,
+    "iterations": 2,
+    "alpha": 0.5,
+    "beta": 0.1,
+    "seed": 42,
+    "n_sentences": 3
+  }
+  ```
+* **Response Body (200 OK):**
+  * `params`: Các tham số sử dụng.
+  * `sentences`: Danh sách câu gốc và ánh xạ document.
+  * `sentence_tokens`: Danh sách token có nhãn (`compound`, `word`, `stopword`).
+  * `heatmap`: Ma trận đếm từ vựng $\times$ câu.
+  * `initial_counts`: Số đếm ngẫu nhiên ban đầu ($n_{dk}, n_k, n_{kw}$).
+  * `traces`: Trace chi tiết từng token ở vòng 1.
+  * `history`: Snapshot $\theta, \phi, \text{log-likelihood}$ qua từng vòng.
+  * `topics`: Nhãn chủ đề, top từ và phân bố $\pi$ toàn đoạn.
+  * `scores`: Điểm thành phần của từng câu.
+  * `mmr`: Các bước lựa chọn và lý do loại bỏ câu.
+  * `summary`: Danh sách câu được chọn và tỉ lệ nén.
+* **Mã lỗi (400 Bad Request):** Trả về thông báo tiếng Việt thân thiện khi văn bản rỗng, ít hơn 5 câu, vượt quá 300 từ, hoặc $K > V$.
 
-## 6. Hướng mở rộng gợi ý
-- Dùng chỉ số coherence (`c_v` thay vì `u_mass`) hoặc quét nhiều giá trị
-  `num_topics` để tự động chọn số chủ đề tối ưu thay vì nhập tay.
-- Thay công thức chấm điểm câu ở Phần 2 bằng chiến lược "mỗi chủ đề chính
-  chọn 1 câu đại diện" để tăng độ đa dạng chủ đề trong bản tóm tắt.
-- Mở rộng `stopwords_vi.txt` bằng danh sách stopword tiếng Việt đầy đủ hơn
-  từ các bộ dữ liệu NLP công khai để LDA cho kết quả sạch hơn trên văn bản dài.
-- Thêm `pyLDAvis` để có bản đồ liên chủ đề (intertopic distance map) tương
-  tác đầy đủ ở Phần 3.
+---
+
+## 6. Giao diện & Trải nghiệm Người dùng (UI/UX)
+
+* **Thiết kế Academic Interactive Studio (Hướng A):** Nền sáng tinh giản, viền mỏng kỹ thuật, thẻ thông tin rõ ràng, bảng màu chủ đề đạt độ tương phản cao (Teal, Indigo, Amber, Rose).
+* **Điều khiển linh hoạt:** Hỗ trợ phím tắt (`Space` phát/tạm dừng, mũi tên `←` `→` lùi/tiến bước, `Shift + ←/→` chuyển cảnh, `Home`/`End` về đầu/cuối), chọn tốc độ phát từ $0.5\times$ đến $2.0\times$.
+* **Khả năng tiếp cận:** Hỗ trợ chuẩn `prefers-reduced-motion` cho người nhạy cảm chuyển động, giao diện tương thích responsive hoàn hảo từ màn hình di động $375\text{px}$ đến màn hình lớn.
