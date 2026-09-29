@@ -1,0 +1,1067 @@
+/* ==========================================================================
+   summarize.css — Player "Tóm tắt dạng video" (Phần 1')
+   Hướng thiết kế A: giảng đường từng bước — đồng bộ ngôn ngữ hình ảnh của
+   trang (nền sáng, thẻ trắng, viền mảnh, Teal làm màu nhấn duy nhất).
+   Mọi class ở đây đều có tiền tố .sum- để không đụng các trang khác.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Form nhập văn bản
+   -------------------------------------------------------------------------- */
+.sum-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.sum-label {
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  color: var(--color-text-secondary);
+}
+
+.sum-textarea {
+  width: 100%;
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--leading-relaxed);
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: 10px;
+  padding: var(--space-4);
+  resize: vertical;
+  min-height: 150px;
+  transition: border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.sum-textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-100);
+}
+
+.sum-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.sum-form-actions .btn {
+  margin-top: 0;
+}
+
+.sum-counter {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.sum-counter.sum-counter--over {
+  color: var(--color-danger);
+  font-weight: var(--font-semibold);
+}
+
+/* Thanh tham số */
+.sum-params {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.sum-param label {
+  display: block;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  margin-bottom: 4px;
+}
+
+.sum-param input {
+  width: 100%;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  padding: 7px 10px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.sum-param input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-100);
+}
+
+/* --------------------------------------------------------------------------
+   2. Khung player
+   -------------------------------------------------------------------------- */
+.sum-player {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+/* --- đầu player: số cảnh + tiêu đề --- */
+.sum-player-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--color-border-subtle);
+  background: var(--color-surface-hover);
+}
+
+.sum-scene-num {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: var(--font-medium);
+  color: var(--color-primary);
+  background: var(--color-primary-50);
+  border: 1px solid var(--color-primary-200);
+  border-radius: 999px;
+  padding: 2px 9px;
+  white-space: nowrap;
+}
+
+.sum-scene-title {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+  line-height: var(--leading-tight);
+}
+
+.sum-scene-step {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+/* --- sân khấu: nội dung của cảnh --- */
+.sum-stage {
+  padding: var(--space-5);
+  min-height: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.sum-stage-inner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  animation: sum-enter 260ms ease-out;
+}
+
+@keyframes sum-enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.sum-stage h3 {
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  color: var(--color-text-secondary);
+}
+
+/* --- phụ đề: đang làm gì và vì sao --- */
+.sum-subtitle {
+  border-top: 1px solid var(--color-border-subtle);
+  background: var(--color-surface-hover);
+  padding: var(--space-3) var(--space-5);
+  font-size: var(--text-sm);
+  line-height: var(--leading-snug);
+  color: var(--color-text-secondary);
+  min-height: 58px;
+}
+
+.sum-subtitle strong {
+  color: var(--color-text);
+  font-weight: var(--font-semibold);
+}
+
+/* --------------------------------------------------------------------------
+   3. Thanh điều khiển
+   -------------------------------------------------------------------------- */
+.sum-controls {
+  border-top: 1px solid var(--color-border);
+  padding: var(--space-3) var(--space-5) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.sum-controls-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.sum-btn {
+  margin: 0;
+  min-width: 40px;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.sum-btn:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-strong);
+  color: var(--color-text);
+}
+
+.sum-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.sum-btn[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.sum-btn--play {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+  padding: 0 16px;
+  font-weight: var(--font-semibold);
+}
+
+.sum-btn--play:hover {
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+  color: #fff;
+}
+
+.sum-btn--play.is-playing {
+  background: var(--color-danger);
+  border-color: var(--color-danger);
+}
+
+.sum-speed {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  margin-left: auto;
+}
+
+.sum-speed select {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  padding: 5px 8px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.sum-time {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  min-width: 92px;
+  text-align: right;
+}
+
+/* --- thanh thời gian có vạch ranh giới cảnh --- */
+.sum-timeline {
+  position: relative;
+  height: 34px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.sum-track {
+  position: absolute;
+  inset: 12px 0 auto 0;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--color-surface-muted);
+  overflow: hidden;
+}
+
+.sum-track-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--color-primary-200);
+  width: 0;
+}
+
+.sum-track-head {
+  position: absolute;
+  top: 8px;
+  width: 4px;
+  height: 16px;
+  border-radius: 2px;
+  background: var(--color-primary-dark);
+  transform: translateX(-2px);
+}
+
+.sum-tick {
+  position: absolute;
+  top: 12px;
+  width: 1px;
+  height: 8px;
+  background: var(--color-border-strong);
+}
+
+.sum-tick-label {
+  position: absolute;
+  bottom: 20px;
+  transform: translateX(-50%);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--color-text-subtle);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* --- danh sách chương (cảnh) --- */
+.sum-chapters {
+  list-style: none;
+  margin: 0;
+  padding: var(--space-3) var(--space-5) var(--space-4);
+  border-top: 1px solid var(--color-border-subtle);
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(178px, 1fr));
+  gap: 2px;
+  max-height: 148px;
+  overflow-y: auto;
+}
+
+.sum-chapter {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  padding: 5px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  background: none;
+  text-align: left;
+  font-family: inherit;
+  width: 100%;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.sum-chapter:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+}
+
+.sum-chapter:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+.sum-chapter.is-current {
+  background: var(--color-primary-50);
+  border-color: var(--color-primary-200);
+  color: var(--color-primary-dark);
+  font-weight: var(--font-semibold);
+}
+
+.sum-chapter.is-done {
+  color: var(--color-text-secondary);
+}
+
+.sum-chapter-num {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--color-text-subtle);
+  min-width: 15px;
+}
+
+.sum-chapter.is-current .sum-chapter-num {
+  color: var(--color-primary);
+}
+
+/* --------------------------------------------------------------------------
+   4. Thành phần dùng chung cho các cảnh
+   -------------------------------------------------------------------------- */
+
+/* câu: khối nền trung tính, viền trái màu chủ đề */
+.sum-sent {
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-3) 0 var(--space-3) var(--space-3);
+  border-left: 3px solid var(--color-border);
+}
+
+.sum-sent-num {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  min-width: 34px;
+  padding-top: 3px;
+}
+
+.sum-sent-body { min-width: 0; }
+
+.sum-sent-text {
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  color: var(--color-text);
+}
+
+.sum-sent.is-empty .sum-sent-text { color: var(--color-text-subtle); }
+
+.sum-sent-note {
+  display: inline-block;
+  margin-top: 5px;
+  font-size: 11px;
+  color: var(--color-warning);
+  background: var(--color-warning-bg);
+  border: 1px solid var(--color-warning-border);
+  border-radius: 5px;
+  padding: 1px 7px;
+}
+
+/* chip từ, tô màu theo chủ đề */
+.sum-tok {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: 1.6;
+  padding: 1px 7px;
+  margin: 0 3px 3px 0;
+  border-radius: 5px;
+  border: 1px solid;
+  white-space: nowrap;
+  transition: opacity 300ms ease, transform 300ms ease;
+}
+
+.sum-tok--k0 { color: #0F766E; background: #CCFBF1; border-color: #99F6E4; }
+.sum-tok--k1 { color: #4338CA; background: #E0E7FF; border-color: #C7D2FE; }
+.sum-tok--k2 { color: #B45309; background: #FEF3C7; border-color: #FDE68A; }
+.sum-tok--k3 { color: #BE185D; background: #FCE7F3; border-color: #FBCFE8; }
+
+.sum-tok--stop {
+  color: var(--color-text-subtle);
+  background: var(--color-surface-muted);
+  border-color: var(--color-border);
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+.sum-tok--num {
+  color: var(--color-text-subtle);
+  background: transparent;
+  border-color: var(--color-border);
+  border-style: dashed;
+}
+
+.sum-tok--dict {
+  color: var(--color-success);
+  background: var(--color-success-bg);
+  border-color: var(--color-success-border);
+}
+
+.sum-tok.is-fading { opacity: 0.16; }
+.sum-tok.is-gone { opacity: 0; transform: scale(0.9); }
+
+.sum-tok.is-active {
+  outline: 2px solid var(--color-text);
+  outline-offset: 1px;
+  font-weight: var(--font-semibold);
+}
+
+.sum-tok.is-changed {
+  animation: sum-flash 520ms ease-out;
+}
+
+@keyframes sum-flash {
+  0%   { transform: scale(1.28); box-shadow: 0 0 0 6px rgba(13, 148, 136, 0.22); }
+  100% { transform: scale(1);    box-shadow: 0 0 0 0 rgba(13, 148, 136, 0); }
+}
+
+/* thanh xác suất */
+.sum-bars { display: flex; flex-direction: column; gap: 8px; }
+
+.sum-bar-row {
+  display: grid;
+  grid-template-columns: 74px 1fr 62px;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--text-xs);
+}
+
+.sum-bar-label { color: var(--color-text-secondary); }
+
+.sum-bar-track {
+  height: 20px;
+  background: var(--color-surface-muted);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.sum-bar-fill {
+  height: 100%;
+  border-radius: 5px;
+  transition: width 240ms ease;
+}
+
+.sum-bar-value {
+  font-family: var(--font-mono);
+  text-align: right;
+  color: var(--color-text-secondary);
+}
+
+/* khối công thức: bảng ghi chú */
+.sum-formula {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  line-height: 1.9;
+  color: var(--color-text);
+  background: var(--color-surface-hover);
+  border-left: 3px solid var(--color-primary);
+  border-radius: 0 8px 8px 0;
+  padding: var(--space-3) var(--space-4);
+  overflow-x: auto;
+}
+
+.sum-formula .op { color: var(--color-text-muted); padding: 0 2px; }
+.sum-formula .num { font-weight: var(--font-semibold); }
+.sum-formula .k0 { color: #0F766E; }
+.sum-formula .k1 { color: #4338CA; }
+.sum-formula .k2 { color: #B45309; }
+.sum-formula .k3 { color: #BE185D; }
+.sum-formula .win { font-weight: var(--font-bold); text-decoration: underline; }
+
+.sum-formula-note {
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+/* bảng dữ liệu nhỏ */
+.sum-table-wrap { overflow-x: auto; }
+
+.sum-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-xs);
+}
+
+.sum-table th,
+.sum-table td {
+  text-align: left;
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--color-border-subtle);
+  white-space: nowrap;
+}
+
+.sum-table th {
+  color: var(--color-text-muted);
+  font-weight: var(--font-semibold);
+  background: var(--color-surface-hover);
+}
+
+.sum-table td.num,
+.sum-table th.num {
+  font-family: var(--font-mono);
+  text-align: right;
+}
+
+.sum-table tr.is-picked { background: var(--color-primary-50); }
+.sum-table tr.is-picked td { font-weight: var(--font-semibold); }
+
+/* heatmap câu × từ */
+.sum-heatmap-scroll { overflow-x: auto; padding-bottom: var(--space-2); }
+
+.sum-heatmap {
+  display: grid;
+  gap: 2px;
+  min-width: min-content;
+}
+
+.sum-hm-cell {
+  width: 15px;
+  height: 15px;
+  border-radius: 3px;
+  background: var(--color-surface-muted);
+}
+
+.sum-hm-cell.is-counted { border: 1px solid rgba(17, 24, 39, 0.08); }
+
+.sum-hm-axis {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--color-text-subtle);
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-height: 96px;
+  text-align: right;
+  padding-top: 2px;
+}
+
+.sum-hm-rowlabel {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--color-text-muted);
+  align-self: center;
+  text-align: right;
+  padding-right: 6px;
+  width: 26px;
+}
+
+.sum-legend {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.sum-legend-scale {
+  display: flex;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+}
+
+.sum-legend-step { width: 22px; height: 12px; }
+
+/* thẻ chủ đề */
+.sum-topic-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: var(--space-3);
+}
+
+.sum-topic-card {
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface);
+}
+
+.sum-topic-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: var(--space-3);
+}
+
+.sum-topic-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.sum-topic-name {
+  font-weight: var(--font-semibold);
+  font-size: var(--text-sm);
+}
+
+.sum-topic-words { display: flex; flex-direction: column; gap: 5px; }
+
+.sum-topic-word {
+  display: grid;
+  grid-template-columns: 1fr 46px;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  font-family: var(--font-mono);
+  color: var(--color-text-secondary);
+}
+
+.sum-topic-word-bar {
+  grid-column: 1 / -1;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--color-surface-muted);
+  overflow: hidden;
+  margin-top: -3px;
+}
+
+.sum-topic-word-bar > i { display: block; height: 100%; border-radius: 3px; }
+
+/* thanh theta theo câu */
+.sum-theta-list { display: flex; flex-direction: column; gap: 6px; }
+
+.sum-theta-row {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+}
+
+.sum-theta-stack {
+  display: flex;
+  height: 18px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--color-surface-muted);
+}
+
+.sum-theta-stack > i {
+  display: block;
+  height: 100%;
+  transition: width 240ms ease;
+}
+
+.sum-theta-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+}
+
+.sum-key-item { display: inline-flex; align-items: center; gap: 5px; }
+
+.sum-key-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+/* thanh điểm chia thành phần */
+.sum-score-bar {
+  display: flex;
+  height: 22px;
+  border-radius: 5px;
+  overflow: hidden;
+  background: var(--color-surface-muted);
+  min-width: 120px;
+}
+
+.sum-score-bar > i {
+  display: block;
+  height: 100%;
+  font-size: 10px;
+  color: #fff;
+  text-align: center;
+  line-height: 22px;
+  font-family: var(--font-mono);
+  overflow: hidden;
+}
+
+.sum-score-list { display: flex; flex-direction: column; gap: 7px; }
+
+.sum-score-row {
+  display: grid;
+  grid-template-columns: 46px 1fr 58px;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--text-xs);
+}
+
+.sum-score-row.is-picked .sum-sent-num { color: var(--color-primary-dark); font-weight: var(--font-bold); }
+
+.sum-score-total {
+  font-family: var(--font-mono);
+  text-align: right;
+  color: var(--color-text);
+  font-weight: var(--font-semibold);
+}
+
+/* bước MMR */
+.sum-mmr-step {
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface);
+}
+
+.sum-mmr-step + .sum-mmr-step { margin-top: var(--space-3); }
+
+.sum-mmr-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-2);
+  font-size: var(--text-sm);
+}
+
+.sum-mmr-badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--color-primary-50);
+  border: 1px solid var(--color-primary-200);
+  color: var(--color-primary-dark);
+}
+
+.sum-mmr-note {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  line-height: var(--leading-snug);
+}
+
+/* scrubber cho Cảnh 7 (Gibbs tăng tốc) */
+.sum-scrubber-card {
+  background: var(--color-surface-hover);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.sum-scrubber-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+}
+
+.sum-scrubber-header strong {
+  color: var(--color-text);
+}
+
+.sum-scrubber-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.sum-scrubber-slider {
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+.sum-scrubber-badge {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  color: var(--color-primary-dark);
+  background: var(--color-primary-50);
+  border: 1px solid var(--color-primary-200);
+  padding: 2px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+/* bản tóm tắt Cảnh 11 */
+.sum-sent.is-picked-source {
+  border-color: var(--color-primary-300);
+  background: var(--color-primary-50);
+}
+
+.sum-sent.is-dim {
+  opacity: 0.28;
+  transition: opacity 280ms ease;
+}
+
+.sum-summary-box {
+  border: 1.5px solid var(--color-primary-300);
+  background: var(--color-surface);
+  border-radius: 12px;
+  padding: var(--space-4);
+  min-height: 120px;
+  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.08);
+}
+
+.sum-summary-lines {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.sum-summary-line {
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+  color: var(--color-text);
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: var(--color-surface-hover);
+  border-left: 3.5px solid var(--color-primary);
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.sum-summary-line.is-entering {
+  animation: sumFlyIn 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes sumFlyIn {
+  0% {
+    opacity: 0;
+    transform: translateY(18px) scale(0.97);
+    background-color: var(--color-primary-100);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    background-color: var(--color-surface-hover);
+  }
+}
+
+.sum-summary-badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: var(--font-semibold);
+  color: var(--color-primary-dark);
+  background: var(--color-primary-100);
+  padding: 1px 7px;
+  border-radius: 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.sum-summary-text {
+  flex: 1;
+}
+
+.sum-summary-empty {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  font-style: italic;
+  padding: var(--space-3) 0;
+}
+
+.sum-ratio {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+}
+
+.sum-ratio b {
+  font-family: var(--font-mono);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+}
+
+.sum-source .sum-sent-text.is-dim { opacity: 0.25; }
+
+/* trạng thái: đang tải / lỗi */
+.sum-status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  padding: var(--space-3) var(--space-4);
+  border-radius: 8px;
+  background: var(--color-surface-muted);
+}
+
+.sum-status--error {
+  background: var(--color-danger-bg);
+  border: 1px solid var(--color-danger-border);
+  color: var(--color-danger);
+}
+
+.sum-spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--color-primary-200);
+  border-top-color: var(--color-primary);
+  animation: sum-spin 800ms linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes sum-spin { to { transform: rotate(360deg); } }
+
+/* --------------------------------------------------------------------------
+   5. Tôn trọng prefers-reduced-motion
+   -------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .sum-stage-inner,
+  .sum-tok,
+  .sum-bar-fill,
+  .sum-theta-stack > i,
+  .sum-summary-line,
+  .sum-spinner,
+  .sum-tok.is-changed {
+    animation: none !important;
+    transition: none !important;
+  }
+  .sum-tok.is-fading,
+  .sum-tok.is-gone {
+    opacity: 0.18;
+    transform: none;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   6. Responsive — xuống tới 375px
+   -------------------------------------------------------------------------- */
+@media (max-width: 720px) {
+  .sum-player-head,
+  .sum-stage,
+  .sum-subtitle,
+  .sum-controls {
+    padding-left: var(--space-4);
+    padding-right: var(--space-4);
+  }
+
+  .sum-stage { min-height: 320px; }
+
+  .sum-chapters { padding-left: var(--space-4); padding-right: var(--space-4); }
+
+  .sum-form-actions .btn { flex: 1 1 auto; }
+
+  .sum-player-head { flex-wrap: wrap; }
+
+  .sum-scene-step { margin-left: 0; width: 100%; }
+
+  .sum-speed { margin-left: 0; }
+
+  .sum-bar-row { grid-template-columns: 62px 1fr 54px; }
+
+  .sum-sent { flex-direction: column; gap: 4px; }
+
+  .sum-sent-num { padding-top: 0; }
+}
+
+@media (max-width: 420px) {
+  .sum-params { grid-template-columns: repeat(2, 1fr); }
+
+  .sum-tick-label { display: none; }
+
+  .sum-time { min-width: 0; }
+
+  .sum-score-row { grid-template-columns: 40px 1fr 50px; }
+}

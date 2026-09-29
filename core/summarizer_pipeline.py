@@ -30,8 +30,8 @@ MIN_NUM_TOPICS = 2
 MAX_NUM_TOPICS = 4
 DEFAULT_ALPHA = 0.5
 DEFAULT_BETA = 0.1
-DEFAULT_ITERATIONS = 60
-MIN_ITERATIONS = 5
+DEFAULT_ITERATIONS = 2
+MIN_ITERATIONS = 1
 MAX_ITERATIONS = 120
 DEFAULT_SEED = 42
 DEFAULT_N_SENTENCES = 3
@@ -486,6 +486,17 @@ def _initial_counts_from(prep, K, seed, alpha, beta):
     model = TracedGibbsLDA(
         prep["docs_tokens"], num_topics=K, alpha=alpha, beta=beta, seed=seed
     )
+    word_totals = [sum(model.n_kw[k][w] for k in range(K)) for w in range(model.V)]
+    sorted_words = sorted(range(model.V), key=lambda w: word_totals[w], reverse=True)
+    top_kw_table = [
+        {
+            "word": model.vocab[w],
+            "counts": [model.n_kw[k][w] for k in range(K)],
+            "total": word_totals[w],
+        }
+        for w in sorted_words[:20]
+    ]
+
     return {
         "assignments": [list(z_doc) for z_doc in model.z],
         "n_dk": [list(row) for row in model.n_dk],
@@ -497,6 +508,7 @@ def _initial_counts_from(prep, K, seed, alpha, beta):
             ]
             for k in range(K)
         ],
+        "top_kw_table": top_kw_table,
         "n_k": list(model.n_k),
         "n_d": list(model.n_d),
         "vocab": list(model.vocab),

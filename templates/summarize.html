@@ -3,7 +3,7 @@
 {% block title %}Tóm tắt văn bản bằng LDA — xem từng bước{% endblock %}
 
 {% block nav %}
-  {% set active = 'part1' %}
+  {% set active = 'summarize' %}
   {% include "_nav.html" with context %}
 {% endblock %}
 
@@ -13,32 +13,113 @@
 
 {% block content %}
 <header class="page-head">
+  <div style="display:flex; align-items:center; gap:var(--space-2); margin-bottom:var(--space-2);">
+    <span class="nav-pill-badge" style="font-size:0.75rem; padding:2px 8px;">Module 01+</span>
+    <span style="font-size:var(--text-xs); color:var(--color-text-muted); font-family:var(--font-mono);">Collapsed Gibbs Sampling · trích xuất tóm tắt</span>
+  </div>
   <h1>Tóm tắt văn bản bằng LDA — xem từng bước</h1>
-  <p>Nhập một đoạn văn, xem toàn bộ quá trình biến nó thành bản tóm tắt.</p>
+  <p>
+    Nhập một đoạn văn tiếng Việt, rồi phát lại toàn bộ hành trình: tách câu, tách từ, chạy Gibbs sampling
+    từng token, tìm chủ đề, chấm điểm từng câu và chọn câu cho bản tóm tắt.
+    Toàn bộ thuật toán do <code>core/trace_lda.py</code> tự cài đặt — không dùng gensim.
+  </p>
 </header>
 
 <main>
+  <!-- ==================== NHẬP VĂN BẢN ==================== -->
   <section>
     <h2>Văn bản đầu vào</h2>
-    <form id="sumForm" class="sum-form">
-      <label for="sumText" class="sum-label">Đoạn văn tiếng Việt (tối đa 300 từ, ít nhất 5 câu)</label>
-      <textarea id="sumText" name="text" rows="8" class="sum-textarea">{{ sample_text }}</textarea>
-      <div class="sum-form-actions">
-        <button type="submit" class="btn btn-primary">Phân tích đoạn văn</button>
-        <button type="button" id="sumSampleBtn" class="btn btn-secondary">Dùng đoạn mẫu</button>
-        <a href="/part1" class="btn btn-ghost">Xem demo cũ</a>
+    <form id="sumForm" class="sum-form" novalidate>
+      <div>
+        <label class="sum-label" for="sumText">Đoạn văn tiếng Việt — tối đa 300 từ, ít nhất 5 câu</label>
+        <textarea id="sumText" name="text" class="sum-textarea" rows="8" spellcheck="false">{{ sample_text }}</textarea>
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:var(--space-3); margin-top:6px; flex-wrap:wrap;">
+          <span class="sum-counter" id="sumCounter"></span>
+          <a href="/part1" class="sum-formula-note" style="color:var(--color-primary)">Xem demo cũ (8 câu, Gibbs từng bước) →</a>
+        </div>
       </div>
+
+      <div class="sum-params">
+        <div class="sum-param">
+          <label for="sumK">Số chủ đề K ({{ bounds.min_topics }}–{{ bounds.max_topics }})</label>
+          <input type="number" id="sumK" min="{{ bounds.min_topics }}" max="{{ bounds.max_topics }}" value="{{ defaults.num_topics }}">
+        </div>
+        <div class="sum-param">
+          <label for="sumIterations">Số vòng Gibbs ({{ bounds.min_iterations }}–{{ bounds.max_iterations }})</label>
+          <input type="number" id="sumIterations" min="{{ bounds.min_iterations }}" max="{{ bounds.max_iterations }}" value="{{ defaults.iterations }}">
+        </div>
+        <div class="sum-param">
+          <label for="sumNSentences">Số câu tóm tắt ({{ bounds.min_sentences }}–{{ bounds.max_sentences }})</label>
+          <input type="number" id="sumNSentences" min="{{ bounds.min_sentences }}" max="{{ bounds.max_sentences }}" value="{{ defaults.n_sentences }}">
+        </div>
+        <div class="sum-param">
+          <label for="sumAlpha">alpha (prior θ)</label>
+          <input type="number" id="sumAlpha" step="0.05" min="0.05" max="5" value="{{ defaults.alpha }}">
+        </div>
+        <div class="sum-param">
+          <label for="sumBeta">beta (prior φ)</label>
+          <input type="number" id="sumBeta" step="0.01" min="0.01" max="2" value="{{ defaults.beta }}">
+        </div>
+        <div class="sum-param">
+          <label for="sumSeed">Random seed</label>
+          <input type="number" id="sumSeed" value="{{ defaults.seed }}">
+        </div>
+      </div>
+
+      <div class="sum-form-actions">
+        <button type="submit" class="btn btn-primary" id="sumSubmit">Phân tích đoạn văn</button>
+        <button type="button" id="sumSampleBtn" class="btn btn-secondary">Dùng đoạn mẫu</button>
+        <span class="sum-formula-note" style="margin-left:auto;">
+          Cùng seed cho cùng kết quả — thử đổi seed để xem khác biệt.
+        </span>
+      </div>
+
+      <div class="sum-status" id="sumStatus" hidden></div>
     </form>
   </section>
 
+  <!-- ==================== PLAYER ==================== -->
   <section id="sumPlayerSection" class="sum-player-section" hidden>
     <h2>Quá trình tóm tắt</h2>
     <div id="sumPlayer"></div>
+    <p class="sum-formula-note" id="sumShortcutHint" hidden style="margin-top:var(--space-3)">
+      Phím tắt: <b>Space</b> phát / tạm dừng · <b>←</b> <b>→</b> lùi / tiến một bước ·
+      <b>Shift + ←</b> <b>Shift + →</b> chuyển cảnh · <b>Home</b> <b>End</b> về đầu / cuối
+    </p>
+  </section>
+
+  <!-- ==================== GHI CHÚ ==================== -->
+  <section>
+    <details class="card" style="padding:var(--space-4) var(--space-5);">
+      <summary style="cursor:pointer; font-weight:600; color:var(--color-primary);">
+        Cách tính điểm câu và chọn câu (MMR)
+      </summary>
+      <div style="margin-top:var(--space-4); line-height:1.7; color:var(--color-text-secondary);">
+        <p style="margin-top:0;">
+          <b>Phân bố chủ đề toàn đoạn</b> π là trung bình của θ các câu, có trọng số theo số token của từng câu.
+        </p>
+        <p>
+          <b>Điểm câu</b> = (0,6 × cos(θ câu, π) + 0,4 × xác suất trung bình của các từ câu đó
+          dưới hỗn hợp ∑<sub>k</sub> π<sub>k</sub>·φ<sub>k</sub>) × hệ số độ dài.
+          Câu quá ngắn hoặc quá dài bị nhân hệ số &lt; 1.
+        </p>
+        <p>
+          <b>MMR</b> (Maximal Marginal Relevance) chọn lần lượt: MMR = λ × độ liên quan − (1−λ) × độ trùng ý
+          lớn nhất với các câu đã chọn, với λ = 0,7. Nhờ vậy bản tóm tắt không bị dồn vào một ý.
+        </p>
+        <p style="margin-bottom:0;">
+          Các câu không còn từ nội dung sau khi lọc stopword sẽ bị bỏ qua ở bước chấm điểm,
+          nhưng vẫn hiện ở cảnh 1–3 kèm ghi chú.
+        </p>
+      </div>
+    </details>
   </section>
 </main>
 {% endblock %}
 
 {% block scripts %}
-<script>window.SUM_DEFAULTS = {{ defaults | tojson }};</script>
+<script>
+  window.SAMPLE_TEXT_SUMMARIZE = {{ sample_text | tojson }};
+</script>
 <script src="/static/js/summarize-player.js"></script>
 {% endblock %}
