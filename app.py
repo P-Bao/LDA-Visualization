@@ -5,6 +5,7 @@ app.py
 Ứng dụng web Flask gồm 3 phần theo đúng yêu cầu đề bài:
 
   Phần 1 (/part1)  - Mô phỏng thuật toán LDA (Gibbs sampling) từng bước trên dữ liệu nhỏ
+  Phần 1' (/summarize) - Tóm tắt văn bản trích xuất, trình bày như "video" từng bước
   Phần 2 (/part2)  - Ứng dụng: tóm tắt văn bản trích xuất dựa trên LDA
   Phần 3 (/part3)  - Thử nghiệm: chạy trên một tập văn bản & đánh giá bằng ROUGE + coherence
 
@@ -17,7 +18,7 @@ Rồi mở http://127.0.0.1:5000
 import json
 import traceback
 
-from flask import Flask, render_template, request
+from flask import Flask, jsonify, render_template, request
 
 from core.gibbs_lda import GibbsLDA
 from core.toy_data import TOY_SENTENCES
@@ -25,6 +26,22 @@ from core.nlp_utils import tokenize_and_clean
 from core.lda_pipeline import summarize_extractive
 from core.experiment import run_experiment
 from core.dataset_loader import load_dataset_by_source
+from core.sample_text import SAMPLE_TEXT_SUMMARIZE
+from core.summarizer_pipeline import (
+    DEFAULT_ALPHA,
+    DEFAULT_BETA,
+    DEFAULT_ITERATIONS,
+    DEFAULT_N_SENTENCES,
+    DEFAULT_NUM_TOPICS,
+    DEFAULT_SEED,
+    MAX_ITERATIONS,
+    MAX_N_SENTENCES,
+    MAX_NUM_TOPICS,
+    MIN_ITERATIONS,
+    MIN_N_SENTENCES,
+    MIN_NUM_TOPICS,
+    summarize_document,
+)
 
 app = Flask(__name__)
 
@@ -65,6 +82,78 @@ def part1():
         num_iterations=num_iterations,
         history_json=json.dumps(history, ensure_ascii=False),
     )
+
+
+# ---------------------------------------------------------------------------
+# PHẦN 1' — TÓM TẮT DẠNG "VIDEO": từ đoạn văn tới bản tóm tắt, từng bước
+# (Dùng chính Gibbs sampling tự cài đặt ở core/trace_lda.py — thuần Python.)
+# ---------------------------------------------------------------------------
+@app.route("/summarize", methods=["GET"])
+def summarize():
+    return render_template(
+        "summarize.html",
+        sample_text=SAMPLE_TEXT_SUMMARIZE,
+        defaults={
+            "num_topics": DEFAULT_NUM_TOPICS,
+            "iterations": DEFAULT_ITERATIONS,
+            "alpha": DEFAULT_ALPHA,
+            "beta": DEFAULT_BETA,
+            "seed": DEFAULT_SEED,
+            "n_sentences": DEFAULT_N_SENTENCES,
+        },
+        bounds={
+            "min_topics": MIN_NUM_TOPICS,
+            "max_topics": MAX_NUM_TOPICS,
+            "min_iterations": MIN_ITERATIONS,
+            "max_iterations": MAX_ITERATIONS,
+            "min_sentences": MIN_N_SENTENCES,
+            "max_sentences": MAX_N_SENTENCES,
+        },
+    )
+
+
+@app.route("/api/summarize", methods=["POST"])
+def api_summarize():
+    """
+    Nhận {text, K, iterations, alpha, beta, seed, n_sentences} và trả về
+    JSON chứa dữ liệu trung gian của MỌI cảnh (kể cả trace vòng 1) để giao
+    diện phát lại thành video.
+    """
+    payload = request.get_json(silent=True) or request.form
+
+    text = (payload.get("text") or "").strip()
+
+    def _num(key, default):
+        try:
+            return int(payload.get(key, default))
+        except (TypeError, ValueError):
+            return default
+
+    def _flt(key, default):
+        try:
+            return float(payload.get(key, default))
+        except (TypeError, ValueError):
+            return default
+
+    try:
+        result = summarize_document(
+            text,
+            num_topics=_num("K", DEFAULT_NUM_TOPICS),
+            iterations=_num("iterations", DEFAULT_ITERATIONS),
+            alpha=_flt("alpha", DEFAULT_ALPHA),
+            beta=_flt("beta", DEFAULT_BETA),
+            seed=_num("seed", DEFAULT_SEED),
+            n_sentences=_num("n_sentences", DEFAULT_N_SENTENCES),
+        )
+    except ValueError as e:
+        # Lỗi nghiệp vụ có thông báo tiếng Việt sẵn (quá ngắn / quá dài /
+        # K vượt từ vựng / thiếu văn bản) -> trả về 400 cho giao diện hiển thị.
+        return jsonify({"error": str(e)}), 400
+    except Exception as e:  # noqa: BLE001 - lỗi ngoài dự kiến
+        traceback.print_exc()
+        return jsonify({"error": f"Lỗi xử lý: {e}"}), 500
+
+    return jsonify(result)
 
 
 # ---------------------------------------------------------------------------

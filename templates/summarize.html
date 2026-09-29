@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Tóm tắt văn bản bằng LDA — xem từng bước{% endblock %}
+
+{% block nav %}
+  {% set active = 'part1' %}
+  {% include "_nav.html" with context %}
+{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="/static/css/summarize.css">
+{% endblock %}
+
+{% block content %}
+<header class="page-head">
+  <h1>Tóm tắt văn bản bằng LDA — xem từng bước</h1>
+  <p>Nhập một đoạn văn, xem toàn bộ quá trình biến nó thành bản tóm tắt.</p>
+</header>
+
+<main>
+  <section>
+    <h2>Văn bản đầu vào</h2>
+    <form id="sumForm" class="sum-form">
+      <label for="sumText" class="sum-label">Đoạn văn tiếng Việt (tối đa 300 từ, ít nhất 5 câu)</label>
+      <textarea id="sumText" name="text" rows="8" class="sum-textarea">{{ sample_text }}</textarea>
+      <div class="sum-form-actions">
+        <button type="submit" class="btn btn-primary">Phân tích đoạn văn</button>
+        <button type="button" id="sumSampleBtn" class="btn btn-secondary">Dùng đoạn mẫu</button>
+        <a href="/part1" class="btn btn-ghost">Xem demo cũ</a>
+      </div>
+    </form>
+  </section>
+
+  <section id="sumPlayerSection" class="sum-player-section" hidden>
+    <h2>Quá trình tóm tắt</h2>
+    <div id="sumPlayer"></div>
+  </section>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>window.SUM_DEFAULTS = {{ defaults | tojson }};</script>
+<script src="/static/js/summarize-player.js"></script>
+{% endblock %}
