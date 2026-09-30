@@ -161,13 +161,15 @@ def tokenize_sentence(sentence: str) -> list:
         {
           "text": str,        # dạng đã lowercase + bỏ ký tự đặc biệt (dùng cho LDA)
           "surface": str,     # như trên (hiển thị)
-          "type": "compound" | "word" | "stopword" | "number",
+          "type": "compound" | "word" | "stopword" | "number" | "short",
           "parts": [str, ...] # các âm tiết gộp lại (chỉ với type="compound")
         }
 
     type="stopword" -> bị loại khỏi LDA nhưng vẫn hiển thị (giao diện cần
     thấy từ biến mất dần ở cảnh 3).
-    type="number"  -> loại (số không mang chủ đề).
+    type="number"   -> bị loại (số không mang chủ đề).
+    type="short"    -> bị loại (token < MIN_WORD_LEN ký tự sau làm sạch,
+                       không đủ ý nghĩa ngữ nghĩa). Trước đây nhãn sai "number".
     """
     lowered = sentence.lower()
     # Tách mảng "từ" (chữ/số) và các ký tự xen kẽ
@@ -225,10 +227,10 @@ def tokenize_sentence(sentence: str) -> list:
             tokens.append(
                 {"text": cleaned, "surface": cleaned, "type": "word", "parts": [word]}
             )
-        # len < MIN_WORD_LEN -> bỏ hẳn (không đủ ý nghĩa)
+        # len < MIN_WORD_LEN -> đánh nhãn "short" (không đủ ý nghĩa ngữ nghĩa)
         else:
             tokens.append(
-                {"text": cleaned, "surface": cleaned, "type": "number", "parts": [word]}
+                {"text": cleaned, "surface": cleaned, "type": "short", "parts": [word]}
             )
         i += 1
 
@@ -318,11 +320,13 @@ def preprocess_document(text: str) -> dict:
     total_kept = 0
     total_stop = 0
     total_num = 0
+    total_short = 0
 
     for idx, toks in enumerate(sentence_tokens):
         kept = kept_tokens(toks)
         total_stop += sum(1 for t in toks if t["type"] == "stopword")
         total_num += sum(1 for t in toks if t["type"] == "number")
+        total_short += sum(1 for t in toks if t["type"] == "short")
         if kept:
             lda_index_map.append(len(docs_tokens))
             docs_tokens.append(kept)
@@ -355,6 +359,7 @@ def preprocess_document(text: str) -> dict:
             "num_kept_tokens": total_kept,
             "num_stopwords_removed": total_stop,
             "num_numbers_removed": total_num,
+            "num_short_removed": total_short,
             "vocab_size": len(heatmap["vocab"]),
         },
     }

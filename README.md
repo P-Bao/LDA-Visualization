@@ -3,9 +3,15 @@
 Dự án Bài tập lớn môn **Phân tích & Khai phá dữ liệu văn bản**: Nghiên cứu, tự cài đặt và ứng dụng mô hình **Latent Dirichlet Allocation (LDA)** trên ngữ liệu tiếng Việt, xây dựng ứng dụng web Flask gồm 4 phân hệ chính:
 
 - **Phần 1 — Mô phỏng thuật toán Gibbs (`/part1`)**: Tự cài đặt LDA từ đầu bằng **Collapsed Gibbs Sampling** (thuần Python, không dùng thư viện ngoài), chạy demo trên 8 câu tiếng Việt / 2 chủ đề rõ rệt, cho phép tua qua từng vòng lặp.
-- **Phần 1' — Tóm tắt dạng "Video" từng bước (`/summarize`)**: Người dùng nhập **một đoạn văn bản bất kỳ**, hệ thống mô phỏng toàn bộ hành trình từ đoạn văn tới bản tóm tắt qua **11 cảnh trực quan** dạng video player (phát, tạm dừng, tua bước, thanh trượt scrubber, hiện công thức với số thực, chấm điểm và chọn câu MMR).
+- **Phần 1' — Tóm tắt dạng "Video" từng bước (`/summarize` hoặc `/simulate`)**: Người dùng nhập **một đoạn văn bản bất kỳ** hoặc chọn **Preset dữ liệu nhỏ 8 câu / Xe điện**, hệ thống mô phỏng toàn bộ hành trình từ đoạn văn tới bản tóm tắt qua **thanh 6 giai đoạn lý thuyết** và **11 cảnh trực quan** dạng video player (hỗ trợ deep link `?preset=toy&scene=6`, scrubber tua vòng lặp Gibbs, phân bố $\theta$ từng câu và top từ khóa theo vòng, công thức với số thực, chấm điểm và chọn câu MMR).
 - **Phần 2 — Ứng dụng tóm tắt văn bản trích xuất (`/part2`)**: Ứng dụng LDA (suy luận biến phân qua gensim) để trích xuất các câu đại diện cho văn bản người dùng nhập.
 - **Phần 3 — Thử nghiệm & Đánh giá (`/part3`)**: Chạy thử nghiệm trên tập dữ liệu tiếng Việt (offline mẫu hoặc tập `vietnews` từ Hugging Face), so sánh với các baseline Lead-k, Random-k và đánh giá bằng ROUGE-1/2/L cùng Topic Coherence ($u\_mass$).
+
+> 📚 **Tài liệu Bàn giao Kỹ thuật:** Xem chi tiết tại thư mục [`docs/`](docs/):
+> - [`docs/part1_mo_ta_tung_buoc.md`](docs/part1_mo_ta_tung_buoc.md): Bảng ánh xạ 6 giai đoạn $\to$ 11 cảnh, ví dụ tính tay 3 token đầu ở vòng 1, các lưu ý trung thực về LL và xác suất $p$.
+> - [`docs/part1_kich_ban_demo.md`](docs/part1_kich_ban_demo.md): Kịch bản thuyết trình và demo 6 phút với các URL deep link cụ thể.
+> - [`docs/screens/README.md`](docs/screens/README.md): Danh mục các màn hình cần chụp cho slide báo cáo.
+> - [`docs/ngoai_pham_vi.md`](docs/ngoai_pham_vi.md): Báo cáo bàn giao các vấn đề tồn đọng ngoài phạm vi tại Phần 2 & 3.
 
 ---
 

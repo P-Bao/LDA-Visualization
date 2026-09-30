@@ -60,19 +60,22 @@
         </div>
         <h2 class="module-title">Mô phỏng thuật toán từng bước</h2>
         <p class="module-desc">
-          Thuật toán Gibbs Sampling được tự cài đặt từ đầu (không dùng thư viện ngoài) trên 8 câu tiếng Việt thuộc 2 chủ đề rõ rệt. 
-          Sử dụng thanh trượt tương tác hoặc tính năng phát tự động để quan sát sự chuyển dịch phân bố chủ đề của từng từ, 
-          ma trận xác suất văn bản–chủ đề θ (theta), và đường cong log-likelihood hội tụ qua từng vòng lặp.
+          Thuật toán Gibbs Sampling tự cài đặt từ đầu (thuần Python) với hai hình thức trải nghiệm: 
+          chạy nhanh trên 8 câu mẫu kiểm chứng hội tụ, hoặc phát lại dạng "video" 11 cảnh (qua 6 giai đoạn) 
+          từ tiền xử lý, gán nhãn từng từ, tới chấm điểm MMR và sinh bản tóm tắt hoàn chỉnh.
         </p>
         <div class="module-features">
-          <span class="feat-pill">8 câu kiểm chứng</span>
-          <span class="feat-pill">Tua vòng lặp 0→60</span>
-          <span class="feat-pill">Phân bố θ &amp; φ</span>
+          <span class="feat-pill">8 câu &amp; đoạn tuỳ ý</span>
+          <span class="feat-pill">Player 11 cảnh (6 giai đoạn)</span>
+          <span class="feat-pill">Trace từng token</span>
         </div>
-        <div class="module-footer">
-          <a class="btn btn-primary" href="/part1">
-            <span>Xem mô phỏng</span>
+        <div class="module-footer" style="display:flex; flex-direction:column; gap:var(--space-2); align-items:stretch;">
+          <a class="btn btn-primary" href="/part1" style="justify-content:center;">
+            <span>Mô phỏng Gibbs (8 câu)</span>
             <span class="btn-arrow">→</span>
+          </a>
+          <a class="btn btn-secondary" href="/summarize?preset=toy" style="justify-content:center; font-size:var(--text-xs); padding:8px 12px;">
+            <span>🎬 Xem từng bước với đoạn văn của bạn →</span>
           </a>
         </div>
       </article>

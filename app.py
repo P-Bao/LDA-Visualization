@@ -18,7 +18,8 @@ Rồi mở http://127.0.0.1:5000
 import json
 import traceback
 
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, redirect, render_template, request, url_for
+from core.presets import PRESETS
 
 from core.gibbs_lda import GibbsLDA
 from core.toy_data import TOY_SENTENCES
@@ -65,10 +66,22 @@ def index():
 # ---------------------------------------------------------------------------
 # PHẦN 1 — Mô phỏng thuật toán từng bước
 # ---------------------------------------------------------------------------
+
+def _int_arg(name, default, lo, hi):
+    """Đọc query param kiểu int, kẹp trong [lo, hi], trả về default khi lỗi.
+    BE-6: chống lỗi 500 khi query param không hợp lệ (abc, 0, 9999…)."""
+    try:
+        v = int(request.args.get(name, default))
+    except (TypeError, ValueError):
+        v = default
+    return max(lo, min(hi, v))
+
+
 @app.route("/part1")
 def part1():
-    num_topics = int(request.args.get("num_topics", 2))
-    num_iterations = int(request.args.get("num_iterations", 20))
+    # BE-6: num_topics kẹp 2..4, num_iterations kẹp 5..60 (khớp min/max form part1.html)
+    num_topics = _int_arg("num_topics", default=2, lo=2, hi=4)
+    num_iterations = _int_arg("num_iterations", default=20, lo=5, hi=60)
 
     toy_tokens = [tokenize_and_clean(s) for s in TOY_SENTENCES]
     model = GibbsLDA(toy_tokens, num_topics=num_topics, alpha=0.1, beta=0.01, seed=42)
@@ -88,11 +101,18 @@ def part1():
 # PHẦN 1' — TÓM TẮT DẠNG "VIDEO": từ đoạn văn tới bản tóm tắt, từng bước
 # (Dùng chính Gibbs sampling tự cài đặt ở core/trace_lda.py — thuần Python.)
 # ---------------------------------------------------------------------------
+@app.route("/simulate")
+def simulate():
+    """C-4: Chuyển hướng /simulate về /summarize?preset=toy"""
+    return redirect(url_for("summarize", preset="toy"), code=302)
+
+
 @app.route("/summarize", methods=["GET"])
 def summarize():
     return render_template(
         "summarize.html",
         sample_text=SAMPLE_TEXT_SUMMARIZE,
+        presets=PRESETS,
         defaults={
             "num_topics": DEFAULT_NUM_TOPICS,
             "iterations": DEFAULT_ITERATIONS,
@@ -144,6 +164,7 @@ def api_summarize():
             beta=_flt("beta", DEFAULT_BETA),
             seed=_num("seed", DEFAULT_SEED),
             n_sentences=_num("n_sentences", DEFAULT_N_SENTENCES),
+            normalize_token_prob=bool(payload.get("normalize_token_prob", False)),
         )
     except ValueError as e:
         # Lỗi nghiệp vụ có thông báo tiếng Việt sẵn (quá ngắn / quá dài /

@@ -45,7 +45,7 @@
     { n: 6, title: 'Gibbs chi tiết — vòng 1, từng từ', beat: 'sweep',
       sub: 'Với từng từ: rút chủ đề cũ ra khỏi bộ đếm, tính xác suất có điều kiện, rồi lấy mẫu lại chủ đề mới.' },
     { n: 7, title: 'Gibbs tăng tốc — vòng 2 đến N', beat: 'accelerate',
-      sub: 'Lặp lại hàng chục vòng, từng từ liên tục đổi chủ đề. Đường log-likelihood (ước lượng) cho thấy mô hình dần khớp với văn bản.' },
+      sub: 'Lặp lại nhiều vòng, từng từ liên tục đổi chủ đề. Đường log-likelihood (ước lượng) cho thấy mô hình dần khớp với văn bản.' },
     { n: 8, title: 'Kết quả chủ đề', beat: 'default',
       sub: 'Sau khi hội tụ, mỗi chủ đề gom một nhóm từ. Nhãn chủ đề chính là vài từ đặc trưng đứng đầu.' },
     { n: 9, title: 'Chấm điểm từng câu', beat: 'default',
@@ -54,6 +54,16 @@
       sub: 'MMR vừa thưởng độ liên quan, vừa phạt câu trùng ý với những câu đã chọn — để bản tóm tắt có đủ nét khác nhau.' },
     { n: 11, title: 'Bản tóm tắt', beat: 'out',
       sub: 'Các câu được chọn được ghép lại theo ĐÚNG thứ tự gốc, không sắp xếp lại — đọc vẫn liền mạch.' }
+  ];
+
+  // C-2: 6 giai đoạn lý thuyết đối sánh với 11 cảnh mô phỏng
+  var STAGES = [
+    { n: 1, title: 'Tiền xử lý',            scenes: [1, 2, 3] },
+    { n: 2, title: 'Từ điển & ma trận đếm', scenes: [4] },
+    { n: 3, title: 'Chạy LDA (Gibbs)',      scenes: [5, 6, 7] },
+    { n: 4, title: 'Phân bố chủ đề',        scenes: [8] },
+    { n: 5, title: 'Chấm điểm & chọn câu',  scenes: [9, 10] },
+    { n: 6, title: 'Bản tóm tắt',           scenes: [11] }
   ];
 
   /* ------------------------------------------------------------------
@@ -80,10 +90,11 @@
   function topicColor(k) { return PALETTE[k % PALETTE.length]; }
   function topicClass(k) { return 'sum-tok--k' + (k % PALETTE.length); }
 
-  function el(tag, cls, html) {
+  function el(tag, cls, html, style) {
     var n = document.createElement(tag);
     if (cls) n.className = cls;
     if (html !== undefined) n.innerHTML = html;
+    if (style) n.style.cssText = style;
     return n;
   }
 
@@ -96,7 +107,8 @@
     index: 0,
     playing: false,
     speed: 1,
-    timer: null
+    timer: null,
+    traceIndex: {}
   };
 
   var dom = {};
@@ -124,8 +136,21 @@
     push(2);
 
     // Cảnh 3: 4 bước — hiện tất gộp từ ghép → mờ stopword → ẩn stopword
+    var sampleCompounds = [];
+    (data.sentence_tokens || []).forEach(function (toks) {
+      toks.forEach(function (t) {
+        if (t.type === 'compound' && sampleCompounds.indexOf(t.text) === -1 && sampleCompounds.length < 3) {
+          sampleCompounds.push(t.text);
+        }
+      });
+    });
+    var stage3Sub0 = sampleCompounds.length > 0
+      ? ('Các từ ghép trong từ điển (' + sampleCompounds.map(function (w) { return '"' + w + '"'; }).join(', ')
+         + ') được gộp lại thành MỘT token — nếu tách rời, chúng sẽ thành những từ vựng rời rạc, mất nghĩa.')
+      : 'Đoạn văn này không có từ ghép nằm trong từ điển nên các từ giữ ở mức từ đơn.';
+
     var stage3 = [
-      'Các từ ghép trong từ điển ("xe điện", "ô nhiễm không khí", "trạm sạc") được gộp lại thành MỘT token — nếu tách rời, chúng sẽ thành những từ vựng rời rạc, mất nghĩa.',
+      stage3Sub0,
       'Stopword (từ chức năng) bắt đầu mờ đi: chúng xuất hiện ở mọi câu nên không giúp phân biệt chủ đề.',
       'Stopword bị bỏ hẳn khỏi dữ liệu. Chỉ còn lại "ý nghĩa" của câu — đó là dữ liệu đưa vào mô hình LDA.',
       'Xong tiền xử lý: mỗi câu còn một danh sách token nội dung làm document cho Gibbs sampling.'
@@ -179,6 +204,25 @@
     root.innerHTML = '';
     root.className = 'sum-player';
 
+    // C-2: Thanh 6 giai đoạn nối lý thuyết với 11 cảnh
+    var stepper = el('ol', 'sum-stepper');
+    STAGES.forEach(function (st, idx) {
+      var li = el('li', 'sum-stepper-item');
+      var b = el('button', 'sum-stepper-btn',
+        '<span class="sum-stepper-num">' + st.n + '</span>'
+        + '<span class="sum-stepper-title">' + esc(st.title) + '</span>');
+      b.type = 'button';
+      b.setAttribute('data-stage', String(idx));
+      b.setAttribute('title', 'Giai đoạn ' + st.n + ': ' + esc(st.title) + ' (nhấn để chuyển tới)');
+      b.addEventListener('click', function () {
+        var targetScene = st.scenes[0];
+        goTo(indexOfScene(targetScene));
+      });
+      li.appendChild(b);
+      stepper.appendChild(li);
+    });
+    root.appendChild(stepper);
+
     var head = el('div', 'sum-player-head');
     head.appendChild(el('span', 'sum-scene-num', 'Cảnh 1 / 11'));
     head.appendChild(el('h2', 'sum-scene-title', 'Văn bản gốc'));
@@ -187,7 +231,10 @@
 
     root.appendChild(el('div', 'sum-stage'));
 
-    root.appendChild(el('div', 'sum-subtitle', ''));
+    var sub = el('div', 'sum-subtitle', '');
+    sub.setAttribute('aria-live', 'off');    // FE-6: off khi play, polite khi pause
+    sub.setAttribute('aria-atomic', 'true');
+    root.appendChild(sub);
 
     var controls = el('div', 'sum-controls');
     var row = el('div', 'sum-controls-row');
@@ -297,7 +344,7 @@
           cls += ' sum-tok--stop';
           if (phase === 2) cls += ' is-fading';
           if (phase >= 3) cls += ' is-gone';
-        } else if (tk.type === 'number') {
+        } else if (tk.type === 'number' || tk.type === 'short') {
           cls += ' sum-tok--num';
         } else if (tk.type === 'compound') {
           cls += ' sum-tok--dict';
@@ -319,7 +366,7 @@
     var key = el('div', 'sum-theta-key');
     key.appendChild(keyItem(PALETTE[0], 'từ ghép trong từ điển'));
     key.appendChild(keyItem('var(--color-text)', 'từ đơn (giữ nguyên)'));
-    key.appendChild(keyItem('var(--color-text-subtle)', 'stopword / số (bị bỏ)'));
+    key.appendChild(keyItem('var(--color-text-subtle)', 'stopword / số / từ 1 ký tự (bị bỏ)'));
     wrap.appendChild(key);
     return wrap;
   };
@@ -569,16 +616,24 @@
       return x.type === 'compound' || x.type === 'word';
     });
     kept.forEach(function (tk, ti) {
-      var k = assignmentsBefore(data, t.d, ti);
+      var k = topicAtStep(t.d, ti, idx);
       var cls = 'sum-tok ' + topicClass(k === null ? 0 : k);
-      if (ti === t.i) cls += ' is-active';
-      if (ti === t.i && k !== null && k !== t.k_new) cls += ' is-changed';
+      if (ti === t.i) {
+        cls += ' is-active';
+        if (t.changed) cls += ' is-changed';
+      }
       line.appendChild(el('span', cls, esc(tk.text)));
+      if (ti === t.i && t.changed) {
+        line.appendChild(el('span', 'sum-tok-dir', '→ chủ đề ' + (t.k_new + 1)));
+      }
     });
     body.appendChild(line);
     body.appendChild(el('span', 'sum-sent-note',
       'Vị trí ' + (t.i + 1) + ' trong câu — chủ đề cũ: ' + (t.k_old + 1)
       + ' → chủ đề mới: ' + (t.k_new + 1) + (t.changed ? ' (đổi)' : ' (giữ nguyên)')));
+    body.appendChild(el('div', 'sum-formula-note',
+      'Đã xét lại: ' + (idx + 1) + ' / ' + trace.length + ' token trong vòng này',
+      'margin-top:4px'));
     row.appendChild(body);
     wrap.appendChild(row);
 
@@ -654,22 +709,21 @@
   };
 
   /**
-   * Màu của token (d, i) TRƯỚC khi token đó được xét lại ở vòng 1.
-   * Vì snapshot[0] chính là trạng thái khởi tạo và vòng 1 đi đúng thứ tự,
-   * các token trước vị trí i đã đổi, các token sau vị trí i chưa đổi.
+   * FE-1: Chủ đề của token (d, i) tại thời điểm khung hiện tại (cur = chỉ số trace đang xét)
+   * pos < cur: đã lấy mẫu lại trong vòng này -> mang k_new
+   * pos >= cur: chưa tới lượt (hoặc đang xét) -> mang k_old
    */
-  function assignmentsBefore(data, d, i) {
-    var trace = data.traces['1'];
-    for (var x = 0; x < trace.length; x++) {
-      var t = trace[x];
-      if (t.d === d && t.i === i) {
-        // token này chưa bị xét lại -> dùng k_old
-        return t.k_old;
-      }
-      if (t.d === d && t.i > i) break; // token phía sau chưa đổi
+  function topicAtStep(d, i, cur) {
+    var key = d + ':' + i;
+    if (state.traceIndex && (key in state.traceIndex)) {
+      var pos = state.traceIndex[key];
+      var e = state.data.traces['1'][pos];
+      return pos < cur ? e.k_new : e.k_old;
     }
-    // nếu không tìm thấy (không có trace) -> dùng snapshot khởi tạo
-    return data.initial.assignments[d][i];
+    if (state.data && state.data.initial_counts && state.data.initial_counts.assignments && state.data.initial_counts.assignments[d]) {
+      return state.data.initial_counts.assignments[d][i];
+    }
+    return 0;
   }
 
   function findFrameForIteration(it) {
@@ -678,6 +732,31 @@
       if (f.scene === 7 && f.data && f.data.iteration === it) return i;
     }
     return -1;
+  }
+
+  /**
+   * FE-4: Vẽ 1 hàng stack phân bố chủ đề θ của câu (dùng chung cho Cảnh 7 và Cảnh 8)
+   */
+  function thetaRow(label, theta, eligible) {
+    var r = el('div', 'sum-theta-row');
+    r.appendChild(el('span', 'sum-hm-rowlabel', label));
+    var stack = el('div', 'sum-theta-stack');
+    if (eligible && theta && theta.length) {
+      theta.forEach(function (v, k) {
+        var seg = el('i');
+        seg.style.width = (v * 100).toFixed(1) + '%';
+        seg.style.background = topicColor(k);
+        seg.title = 'Chủ đề ' + (k + 1) + ': ' + pct(v);
+        stack.appendChild(seg);
+      });
+    } else {
+      var d = el('i');
+      d.style.width = '100%';
+      d.style.background = 'var(--color-surface-muted)';
+      stack.appendChild(d);
+    }
+    r.appendChild(stack);
+    return r;
   }
 
   // --- Cảnh 7: tăng tốc -------------------------------------------------
@@ -737,9 +816,62 @@
     });
     wrap.appendChild(rows);
 
+    // FE-4: Khối 2 cột: θ từng câu & Top từ mỗi chủ đề theo vòng này
+    var grid2 = el('div', 'sum-grid2');
+
+    // Cột trái: θ từng câu ở vòng này
+    var leftCol = el('div');
+    leftCol.appendChild(el('h3', null, 'Phân bố chủ đề θ từng câu (vòng ' + it + ')'));
+    var thetaList = el('div', 'sum-theta-list');
+    if (data.sentences.length > 12) {
+      thetaList.style.maxHeight = '220px';
+      thetaList.style.overflowY = 'auto';
+    }
+    data.sentences.forEach(function (s, si) {
+      if (!s.is_empty && s.lda_doc !== null && s.lda_doc !== undefined && snap.theta && snap.theta[s.lda_doc]) {
+        thetaList.appendChild(thetaRow('C' + (si + 1), snap.theta[s.lda_doc], true));
+      } else {
+        thetaList.appendChild(thetaRow('C' + (si + 1), null, false));
+      }
+    });
+    leftCol.appendChild(thetaList);
+    grid2.appendChild(leftCol);
+
+    // Cột phải: Top từ mỗi chủ đề ở vòng này
+    var rightCol = el('div');
+    rightCol.appendChild(el('h3', null, 'Top từ mỗi chủ đề (vòng ' + it + ')'));
+    var topicList = el('div');
+    topicList.style.cssText = 'display:flex;flex-direction:column;gap:8px;margin-top:4px';
+    for (var k = 0; k < K; k++) {
+      var topRow = el('div');
+      topRow.style.cssText = 'display:flex;align-items:center;gap:8px;flex-wrap:wrap';
+      var kLabel = el('span', null, '<strong>Chủ đề ' + (k + 1) + ':</strong>');
+      kLabel.style.cssText = 'font-size:var(--text-xs);min-width:70px;color:' + topicColor(k);
+      topRow.appendChild(kLabel);
+
+      var prevTop4 = (prev && prev.phi && prev.phi[k])
+        ? prev.phi[k].slice(0, 4).map(function (pair) { return pair[0]; })
+        : [];
+
+      var curTop4 = (snap && snap.phi && snap.phi[k]) ? snap.phi[k].slice(0, 4) : [];
+      curTop4.forEach(function (pair) {
+        var word = pair[0];
+        var isNewTop = it > 1 && prevTop4.length > 0 && prevTop4.indexOf(word) === -1;
+        var chipCls = 'sum-tok ' + topicClass(k) + (isNewTop ? ' is-changed' : '');
+        var chip = el('span', chipCls, esc(word));
+        chip.title = esc(word) + ' (' + fmt(pair[1], 4) + ')' + (isNewTop ? ' — mới lọt top 4' : '');
+        topRow.appendChild(chip);
+      });
+      topicList.appendChild(topRow);
+    }
+    rightCol.appendChild(topicList);
+    grid2.appendChild(rightCol);
+
+    wrap.appendChild(grid2);
+
     // đường log-likelihood
     wrap.appendChild(el('h3', null,
-      'log-likelihood ước lượng (giá trị cao hơn = mô hình khớp văn bản hơn)'));
+      'log-likelihood ước lượng (giá trị cao hơn = mô hình khớp văn bản hơn)', 'margin-top:var(--space-2)'));
     wrap.appendChild(llChart(data, it));
     wrap.appendChild(el('p', 'sum-formula-note',
       'Đây là log-likelihood ước lượng từ θ và φ ở từng vòng, dùng để minh hoạ xu hướng hội tụ — '
@@ -863,23 +995,7 @@
     wrap.appendChild(el('h3', null, 'Phân bố chủ đề của từng câu θ (đã hội tụ)'));
     var list = el('div', 'sum-theta-list');
     data.scores.forEach(function (sc) {
-      var s = data.sentences[sc.sentence_index];
-      var r = el('div', 'sum-theta-row');
-      r.appendChild(el('span', 'sum-hm-rowlabel', 'C' + (sc.sentence_index + 1)));
-      var stack = el('div', 'sum-theta-stack');
-      if (sc.eligible) {
-        sc.theta.forEach(function (v, k) {
-          var seg = el('i');
-          seg.style.width = (v * 100).toFixed(1) + '%';
-          seg.style.background = topicColor(k);
-          seg.title = 'Chủ đề ' + (k + 1) + ': ' + pct(v);
-          stack.appendChild(seg);
-        });
-      } else {
-        stack.appendChild(el('i')).style.background = 'var(--color-surface-muted)';
-      }
-      r.appendChild(stack);
-      list.appendChild(r);
+      list.appendChild(thetaRow('C' + (sc.sentence_index + 1), sc.theta, sc.eligible));
     });
     wrap.appendChild(list);
 
@@ -897,10 +1013,12 @@
   RENDER[9] = function (data) {
     var wrap = el('div', 'sum-stage-inner');
     wrap.appendChild(el('h3', null,
-      'Điểm = 0,6 × cos(θ câu, π toàn đoạn) + 0,4 × xác suất trung bình của các từ trong câu, '
-      + 'rồi nhân hệ số độ dài'));
+      'Điểm = (0,6 × cos(θ câu, π toàn đoạn) + 0,4 × xác suất trung bình của các từ) × hệ số độ dài'));
 
-    var maxScore = Math.max.apply(null, data.scores.map(function (s) { return s.score; }));
+    var eligibleList = data.scores.filter(function (s) { return s.eligible; });
+    var scale = Math.max.apply(null, eligibleList.map(function (s) {
+      return s.raw !== undefined ? s.raw : (0.6 * s.cosine + 0.4 * s.token_prob);
+    })) || 1;
 
     var list = el('div', 'sum-score-list');
     data.scores.forEach(function (sc) {
@@ -909,22 +1027,31 @@
       r.appendChild(el('span', 'sum-hm-rowlabel', 'C' + (sc.sentence_index + 1)));
       var bar = el('div', 'sum-score-bar');
       if (sc.eligible) {
-        var w = (sc.score / (maxScore || 1)) * 100;
+        var partCos = sc.part_cos !== undefined ? sc.part_cos : (0.6 * sc.cosine);
+        var partP = sc.part_p !== undefined ? sc.part_p : (0.4 * sc.token_prob);
+        var raw = sc.raw !== undefined ? sc.raw : (partCos + partP);
+
+        // đoạn A: cos
         var a = el('i');
-        a.style.width = ((w * 0.6) / 1).toFixed(1) + '%';
+        a.style.width = ((partCos / scale) * 100).toFixed(1) + '%';
         a.style.background = PALETTE[0];
-        a.title = '0,6 × cos = ' + fmt(0.6 * sc.cosine, 3);
-        var b = el('i');
-        b.style.width = ((w * 0.4) / 1).toFixed(1) + '%';
-        b.style.background = PALETTE[1];
-        b.title = '0,4 × xác suất = ' + fmt(0.4 * sc.token_prob, 4);
+        a.title = '0,6 × cos = ' + fmt(partCos, 4);
         bar.appendChild(a);
+
+        // đoạn B: token prob
+        var b = el('i');
+        b.style.width = ((partP / scale) * 100).toFixed(1) + '%';
+        b.style.background = PALETTE[1];
+        b.title = '0,4 × xác suất = ' + fmt(partP, 4);
         bar.appendChild(b);
+
+        // đoạn phạt độ dài (nếu có)
         if (sc.length_factor < 1) {
-          var c = el('i');
-          c.style.width = '10px';
-          c.style.background = PALETTE[2];
-          c.title = 'Phạt độ dài: ×' + sc.length_factor + ' — ' + sc.reason;
+          var pen = raw * (1 - sc.length_factor);
+          var penW = (pen / scale) * 100;
+          var c = el('i', 'sum-seg--penalty');
+          c.style.width = Math.max(1, penW).toFixed(1) + '%';
+          c.title = 'Phạt độ dài (hệ số ×' + sc.length_factor + '): trừ ~' + fmt(pen, 3) + ' điểm — ' + sc.reason;
           bar.appendChild(c);
         }
       } else {
@@ -942,7 +1069,9 @@
     var key = el('div', 'sum-theta-key');
     key.appendChild(keyItem(PALETTE[0], '0,6 × cos(θ, π)'));
     key.appendChild(keyItem(PALETTE[1], '0,4 × xác suất từ'));
-    key.appendChild(keyItem(PALETTE[2], 'phạt câu quá ngắn/dài'));
+    var penKey = el('span', 'sum-key-item');
+    penKey.innerHTML = '<span class="sum-key-dot sum-seg--penalty" style="display:inline-block;width:10px;height:10px;border-radius:3px;"></span> phạt độ dài (gạch chéo)';
+    key.appendChild(penKey);
     wrap.appendChild(key);
 
     // bảng chi tiết
@@ -950,17 +1079,23 @@
     var t = el('table', 'sum-table');
     t.innerHTML = '<thead><tr><th>Câu</th><th class="num">cos(θ, π)</th>'
       + '<th class="num">0,6 × cos</th><th class="num">xác suất TB</th>'
-      + '<th class="num">0,4 × p</th><th class="num">hệ số dài</th>'
+      + '<th class="num">0,4 × p</th><th class="num">p chiếm %</th><th class="num">hệ số dài</th>'
       + '<th class="num">Điểm</th><th>Ghi chú</th></tr></thead>';
     var tb = el('tbody');
     data.scores.forEach(function (sc) {
       var picked = data.mmr.selected.indexOf(sc.sentence_index) >= 0;
       var tr = el('tr', picked ? 'is-picked' : '');
+      var partCos = sc.part_cos !== undefined ? sc.part_cos : (0.6 * sc.cosine);
+      var partP = sc.part_p !== undefined ? sc.part_p : (0.4 * sc.token_prob);
+      var raw = sc.raw !== undefined ? sc.raw : (partCos + partP);
+      var pPct = (sc.eligible && raw > 0) ? (partP / raw * 100).toFixed(1) + '%' : '—';
+
       tr.innerHTML = '<td>Câu ' + (sc.sentence_index + 1) + '</td>'
         + '<td class="num">' + (sc.eligible ? fmt(sc.cosine, 3) : '—') + '</td>'
-        + '<td class="num">' + (sc.eligible ? fmt(0.6 * sc.cosine, 3) : '—') + '</td>'
+        + '<td class="num">' + (sc.eligible ? fmt(partCos, 3) : '—') + '</td>'
         + '<td class="num">' + (sc.eligible ? fmt(sc.token_prob, 5) : '—') + '</td>'
-        + '<td class="num">' + (sc.eligible ? fmt(0.4 * sc.token_prob, 4) : '—') + '</td>'
+        + '<td class="num">' + (sc.eligible ? fmt(partP, 4) : '—') + '</td>'
+        + '<td class="num">' + pPct + '</td>'
         + '<td class="num">' + (sc.eligible ? '×' + sc.length_factor : '—') + '</td>'
         + '<td class="num">' + (sc.eligible ? fmt(sc.score, 3) : '—') + '</td>'
         + '<td>' + esc(sc.reason || (picked ? 'được chọn' : '')) + '</td>';
@@ -969,6 +1104,22 @@
     t.appendChild(tb);
     tw.appendChild(t);
     wrap.appendChild(tw);
+
+    // Ghi chú sinh động từ dữ liệu
+    var avgPPct = '0.0';
+    if (eligibleList.length) {
+      var totalPPct = eligibleList.reduce(function (sum, s) {
+        var r = s.raw !== undefined ? s.raw : (0.6 * s.cosine + 0.4 * s.token_prob);
+        var p = s.part_p !== undefined ? s.part_p : (0.4 * s.token_prob);
+        return sum + (r > 0 ? (p / r) : 0);
+      }, 0);
+      avgPPct = (totalPPct / eligibleList.length * 100).toFixed(1);
+    }
+    var noteText = (data.params && data.params.normalize_token_prob)
+      ? ('Đã bật chuẩn hoá xác suất từ (normalize_token_prob): thành phần p được kéo về cùng bậc độ lớn với cosin, trung bình p đóng góp ' + avgPPct + '% điểm.')
+      : ('Trung bình thành phần xác suất từ chỉ đóng góp ' + avgPPct + '% điểm; điểm chủ yếu do độ giống chủ đề (cos).');
+    wrap.appendChild(el('p', 'sum-formula-note', noteText));
+
     return wrap;
   };
 
@@ -1168,12 +1319,43 @@
       c.setAttribute('aria-current', isCur ? 'step' : 'false');
     }
 
+    // C-2: Cập nhật trạng thái thanh 6 giai đoạn (STAGES)
+    var curScene = frame.scene;
+    var curStageIdx = -1;
+    for (var sIdx = 0; sIdx < STAGES.length; sIdx++) {
+      if (STAGES[sIdx].scenes.indexOf(curScene) >= 0) {
+        curStageIdx = sIdx;
+        break;
+      }
+    }
+    var stepperBtns = $('.sum-stepper', dom.player).querySelectorAll('.sum-stepper-btn');
+    for (var bi = 0; bi < stepperBtns.length; bi++) {
+      var sBtn = stepperBtns[bi];
+      var isCurStage = (bi === curStageIdx);
+      var isDoneStage = (bi < curStageIdx);
+      sBtn.className = 'sum-stepper-btn'
+        + (isCurStage ? ' is-current' : '')
+        + (isDoneStage ? ' is-done' : '');
+      sBtn.setAttribute('aria-current', isCurStage ? 'step' : 'false');
+    }
+
     // trạng thái aria của timeline
     var tl = $('#sumTimeline', dom.player);
     tl.setAttribute('aria-valuemin', '0');
     tl.setAttribute('aria-valuemax', String(total - 1));
     tl.setAttribute('aria-valuenow', String(state.index));
     tl.setAttribute('aria-valuetext', 'Cảnh ' + frame.scene + ' — ' + frame.title);
+
+    // C-3: Cập nhật tham số scene trên URL khi đổi cảnh
+    if (window.history && window.history.replaceState) {
+      try {
+        var u = new URL(window.location.href);
+        u.searchParams.set('scene', String(frame.scene));
+        window.history.replaceState(null, '', u.toString());
+      } catch (e) {
+        // bỏ qua nếu trình duyệt chặn
+      }
+    }
   }
 
   function indexOfScene(sceneN) {
@@ -1221,6 +1403,10 @@
       b.classList.add('is-playing');
       b.setAttribute('aria-pressed', 'true');
     }
+    // FE-6: aria-live="off" khi đang tự phát để không spam trình đọc màn hình
+    var sub = $('.sum-subtitle', dom.player);
+    if (sub) sub.setAttribute('aria-live', 'off');
+
     render();
     schedule();
   }
@@ -1229,10 +1415,14 @@
     state.playing = false;
     clearTimeout(state.timer);
     var b = $('#sumPlay', dom.player);
-    if (!b) return;
-    b.innerHTML = ICONS.play + ' <span>Phát</span>';
-    b.classList.remove('is-playing');
-    b.setAttribute('aria-pressed', 'false');
+    if (b) {
+      b.innerHTML = ICONS.play + ' <span>Phát</span>';
+      b.classList.remove('is-playing');
+      b.setAttribute('aria-pressed', 'false');
+    }
+    // FE-6: aria-live="polite" khi tạm dừng để trình đọc màn hình đọc phụ đề
+    var sub = $('.sum-subtitle', dom.player);
+    if (sub) sub.setAttribute('aria-live', 'polite');
   }
 
   function toggle() { state.playing ? pause() : play(); }
@@ -1349,7 +1539,23 @@
     box.hidden = false;
   }
 
-  function runAnalysis() {
+  function applyPreset(key) {
+    if (!window.PRESETS || !(key in window.PRESETS)) return;
+    var p = window.PRESETS[key];
+    var ta = $('#sumText');
+    if (ta && p.text) ta.value = p.text;
+    if (p.params) {
+      if ('K' in p.params && $('#sumK')) $('#sumK').value = p.params.K;
+      if ('iterations' in p.params && $('#sumIterations')) $('#sumIterations').value = p.params.iterations;
+      if ('alpha' in p.params && $('#sumAlpha')) $('#sumAlpha').value = p.params.alpha;
+      if ('beta' in p.params && $('#sumBeta')) $('#sumBeta').value = p.params.beta;
+      if ('seed' in p.params && $('#sumSeed')) $('#sumSeed').value = p.params.seed;
+      if ('n_sentences' in p.params && $('#sumNSentences')) $('#sumNSentences').value = p.params.n_sentences;
+    }
+    updateCounter();
+  }
+
+  function runAnalysis(onComplete) {
     var text = $('#sumText').value.trim();
     var body = {
       text: text,
@@ -1382,6 +1588,9 @@
         }
         $('#sumStatus').hidden = true;
         load(res.data);
+        if (typeof onComplete === 'function') {
+          onComplete(res.data);
+        }
       })
       .catch(function (err) {
         $('#sumSubmit').disabled = false;
@@ -1393,6 +1602,13 @@
     state.data = data;
     state.index = 0;
     state.playing = false;
+
+    // FE-1: Dựng bảng tra vị trí token trong traces['1']
+    state.traceIndex = {};
+    var tr = data.traces && data.traces['1'] ? data.traces['1'] : [];
+    for (var ti = 0; ti < tr.length; ti++) {
+      state.traceIndex[tr[ti].d + ':' + tr[ti].i] = ti;
+    }
 
     buildShell();
     state.frames = buildFrames(data);
@@ -1417,9 +1633,19 @@
       runAnalysis();
     });
 
+    // C-1: Lắng nghe sự kiện click các nút preset
+    document.querySelectorAll('.sum-preset-btn').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var key = b.getAttribute('data-preset');
+        applyPreset(key);
+      });
+    });
+
     $('#sumSampleBtn').addEventListener('click', function () {
-      $('#sumText').value = window.SAMPLE_TEXT_SUMMARIZE || $('#sumText').value;
-      updateCounter();
+      if (!window.PRESETS || !window.PRESETS.ev) {
+        $('#sumText').value = window.SAMPLE_TEXT_SUMMARIZE || $('#sumText').value;
+        updateCounter();
+      }
     });
 
     var ta = $('#sumText');
@@ -1427,6 +1653,24 @@
     updateCounter();
 
     bindKeys();
+
+    // C-3: Xử lý Deep link (?preset=toy|ev&scene=1..11&autoplay=1)
+    var params = new URLSearchParams(window.location.search);
+    var presetParam = params.get('preset');
+    var sceneParam = parseInt(params.get('scene'), 10);
+    var autoplayParam = params.get('autoplay');
+
+    if (presetParam && window.PRESETS && (presetParam in window.PRESETS)) {
+      applyPreset(presetParam);
+      runAnalysis(function () {
+        if (!isNaN(sceneParam) && sceneParam >= 1 && sceneParam <= 11) {
+          goTo(indexOfScene(sceneParam));
+        }
+        if (autoplayParam === '1' || autoplayParam === 'true') {
+          play();
+        }
+      });
+    }
   }
 
   function updateCounter() {

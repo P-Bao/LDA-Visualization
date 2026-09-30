@@ -108,6 +108,90 @@
   overflow: hidden;
 }
 
+/* --- thanh 6 giai đoạn (C-2) --- */
+.sum-stepper {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.sum-stepper-item {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+}
+
+.sum-stepper-btn {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 8px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--color-text-muted);
+  font-family: inherit;
+  font-size: var(--text-xs);
+  font-weight: var(--font-medium);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 180ms ease;
+  text-align: center;
+}
+
+.sum-stepper-btn:hover {
+  color: var(--color-text);
+  background: var(--color-surface-hover);
+}
+
+.sum-stepper-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.sum-stepper-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.sum-stepper-btn.is-current {
+  color: var(--color-primary-dark);
+  font-weight: var(--font-semibold);
+  border-bottom-color: var(--color-primary);
+  background: var(--color-primary-50);
+}
+
+.sum-stepper-btn.is-current .sum-stepper-num {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.sum-stepper-btn.is-done {
+  color: var(--color-text-secondary);
+}
+
+.sum-stepper-btn.is-done .sum-stepper-num {
+  background: var(--color-primary-100);
+  color: var(--color-primary-dark);
+}
+
 /* --- đầu player: số cảnh + tiêu đề --- */
 .sum-player-head {
   display: flex;
@@ -500,6 +584,24 @@
   animation: sum-flash 520ms ease-out;
 }
 
+.sum-tok-dir {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: var(--font-semibold);
+  color: var(--color-primary-dark);
+  background: var(--color-primary-50);
+  border: 1px solid var(--color-primary-200);
+  border-radius: 4px;
+  padding: 1px 5px;
+  margin-right: 4px;
+}
+
+.sum-grid2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--space-4);
+}
+
 @keyframes sum-flash {
   0%   { transform: scale(1.28); box-shadow: 0 0 0 6px rgba(13, 148, 136, 0.22); }
   100% { transform: scale(1);    box-shadow: 0 0 0 0 rgba(13, 148, 136, 0); }
@@ -771,6 +873,17 @@
   line-height: 22px;
   font-family: var(--font-mono);
   overflow: hidden;
+}
+
+.sum-seg--penalty {
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(180, 83, 9, 0.4),
+    rgba(180, 83, 9, 0.4) 4px,
+    rgba(180, 83, 9, 0.75) 4px,
+    rgba(180, 83, 9, 0.75) 8px
+  );
+  border-left: 1px dashed rgba(255, 255, 255, 0.4);
 }
 
 .sum-score-list { display: flex; flex-direction: column; gap: 7px; }
@@ -1054,6 +1167,11 @@
   .sum-sent { flex-direction: column; gap: 4px; }
 
   .sum-sent-num { padding-top: 0; }
+
+  .sum-grid2 { grid-template-columns: 1fr; }
+
+  .sum-stepper-btn .sum-stepper-title { display: none; }
+  .sum-stepper-btn.is-current .sum-stepper-title { display: inline; }
 }
 
 @media (max-width: 420px) {
@@ -1063,5 +1181,15 @@
 
   .sum-time { min-width: 0; }
 
-  .sum-score-row { grid-template-columns: 40px 1fr 50px; }
+  .sum-score-row { grid-template-columns: 34px 1fr 48px; gap: 6px; }
+
+  .sum-bar-row { grid-template-columns: 52px 1fr 46px; gap: 6px; }
+
+  .sum-theta-row { grid-template-columns: 32px 1fr; gap: 6px; }
+
+  .sum-table-wrap {
+    min-width: 0;
+    max-width: 100%;
+    -webkit-overflow-scrolling: touch;
+  }
 }

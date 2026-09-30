@@ -30,7 +30,7 @@ MIN_NUM_TOPICS = 2
 MAX_NUM_TOPICS = 4
 DEFAULT_ALPHA = 0.5
 DEFAULT_BETA = 0.1
-DEFAULT_ITERATIONS = 2
+DEFAULT_ITERATIONS = 30
 MIN_ITERATIONS = 1
 MAX_ITERATIONS = 120
 DEFAULT_SEED = 42
@@ -89,16 +89,23 @@ def _length_reason(num_tokens):
 # CHẤM ĐIỂM & MMR
 # ---------------------------------------------------------------------------
 
-def score_sentences(model, docs_tokens, pi, lda_index_map, sentences):
+def score_sentences(model, docs_tokens, pi, lda_index_map, sentences,
+                    normalize_token_prob=False):
     """
     Chấm điểm từng câu.
 
         score(câu) = (0.6 * cos(theta_d, pi)      # câu có nội dung giống chủ đề
-                                   đại diện của cả đoạn không?
+                                   đại diện của cả đoạn không?\r
                     + 0.4 * trung_bình_xác_suất_token)  # từ trong câu có dễ
                                     * he_so_do_dai       # thuộc chủ đề không?
 
+    Tham số normalize_token_prob (mặc định False — D2):
+        Khi True: chia token_prob mỗi câu cho max(token_prob) trước khi tính
+        điểm, giúp phần p cùng bậc độ lớn với phần cos.
+        Khi False: hành vi gốc, không đổi kết quả tóm tắt.
+
     Trả về danh sách dict (mỗi câu 1 phần tử) kèm từng thành phần điểm.
+    Khoá bổ sung (tương thích ngược): part_cos, part_p, raw.
     """
     theta = model.theta()
     phi = model.phi_full()
@@ -120,6 +127,9 @@ def score_sentences(model, docs_tokens, pi, lda_index_map, sentences):
                     "score": 0.0,
                     "num_tokens": 0,
                     "reason": "không còn từ nội dung",
+                    "part_cos": 0.0,
+                    "part_p": 0.0,
+                    "raw": 0.0,
                 }
             )
             continue
@@ -136,11 +146,6 @@ def score_sentences(model, docs_tokens, pi, lda_index_map, sentences):
             total_prob += p_word
         token_prob = total_prob / len(tokens) if tokens else 0.0
 
-        factor = _length_factor(len(tokens))
-
-        raw = 0.6 * cos_sim + 0.4 * token_prob
-        score = raw * factor
-
         results.append(
             {
                 "sentence_index": sent_idx,
@@ -149,14 +154,35 @@ def score_sentences(model, docs_tokens, pi, lda_index_map, sentences):
                 "theta": [round(v, 4) for v in theta_d],
                 "cosine": round(cos_sim, 4),
                 "token_prob": round(token_prob, 6),
-                "length_factor": factor,
-                "score": round(score, 4),
+                "length_factor": _length_factor(len(tokens)),
+                "score": None,   # tính sau khi chuẩn hoá (nếu cần)
                 "num_tokens": len(tokens),
                 "reason": _length_reason(len(tokens)),
             }
         )
 
+    # --- Chuẩn hoá token_prob (nếu bật cờ) ----------------------------------
+    eligible_results = [r for r in results if r["eligible"]]
+    if normalize_token_prob and eligible_results:
+        max_p = max(r["token_prob"] for r in eligible_results) or 1.0
+    else:
+        max_p = 1.0  # không chuẩn hoá: chia cho 1 không đổi gì
+
+    for r in results:
+        if not r["eligible"]:
+            continue
+        token_prob_used = r["token_prob"] / max_p
+        part_cos = 0.6 * r["cosine"]
+        part_p = 0.4 * token_prob_used
+        raw = part_cos + part_p
+        factor = r["length_factor"]
+        r["score"] = round(raw * factor, 4)
+        r["part_cos"] = round(part_cos, 6)
+        r["part_p"] = round(part_p, 6)
+        r["raw"] = round(raw, 6)
+
     return results
+
 
 
 def select_sentences_mmr(scores, theta, n_sentences, mmr_lambda=DEFAULT_MMR_LAMBDA):
@@ -303,6 +329,7 @@ def summarize_document(
     mmr_lambda=DEFAULT_MMR_LAMBDA,
     trace_iterations=(1,),
     dev_checks=False,
+    normalize_token_prob=False,
 ):
     """
     Chạy toàn bộ pipeline và trả về một dict JSON-serializable chứa dữ liệu
@@ -375,7 +402,8 @@ def summarize_document(
     ]
 
     # --- 5. Chấm điểm câu ---------------------------------------------
-    scores = score_sentences(model, docs_tokens, pi, lda_index_map, sentences)
+    scores = score_sentences(model, docs_tokens, pi, lda_index_map, sentences,
+                             normalize_token_prob=normalize_token_prob)
 
     # --- 6. Chọn câu bằng MMR ----------------------------------------
     selected, mmr_steps = select_sentences_mmr(
@@ -408,6 +436,7 @@ def summarize_document(
             "n_sentences": n_sentences,
             "mmr_lambda": mmr_lambda,
             "trace_iterations": wanted,
+            "normalize_token_prob": normalize_token_prob,
         },
         "input": {
             "text": (text or "").strip(),

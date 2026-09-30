@@ -68,7 +68,8 @@
 
       <div class="sum-form-actions">
         <button type="submit" class="btn btn-primary" id="sumSubmit">Phân tích đoạn văn</button>
-        <button type="button" id="sumSampleBtn" class="btn btn-secondary">Dùng đoạn mẫu</button>
+        <button type="button" class="btn btn-secondary sum-preset-btn" data-preset="toy">Dữ liệu nhỏ: 8 câu</button>
+        <button type="button" class="btn btn-secondary sum-preset-btn" data-preset="ev" id="sumSampleBtn">Đoạn mẫu: xe điện</button>
         <span class="sum-formula-note" style="margin-left:auto;">
           Cùng seed cho cùng kết quả — thử đổi seed để xem khác biệt.
         </span>
@@ -120,6 +121,7 @@
 {% block scripts %}
 <script>
   window.SAMPLE_TEXT_SUMMARIZE = {{ sample_text | tojson }};
+  window.PRESETS = {{ presets | tojson }};
 </script>
 <script src="/static/js/summarize-player.js"></script>
 {% endblock %}
