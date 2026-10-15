@@ -79,9 +79,9 @@ def _int_arg(name, default, lo, hi):
 
 @app.route("/part1")
 def part1():
-    # BE-6: num_topics kẹp 2..4, num_iterations kẹp 5..60 (khớp min/max form part1.html)
-    num_topics = _int_arg("num_topics", default=2, lo=2, hi=4)
-    num_iterations = _int_arg("num_iterations", default=20, lo=5, hi=60)
+    # BE-6: num_topics kẹp 2..15, num_iterations kẹp 5..1000 (khớp min/max form part1.html)
+    num_topics = _int_arg("num_topics", default=2, lo=2, hi=15)
+    num_iterations = _int_arg("num_iterations", default=20, lo=5, hi=1000)
 
     toy_tokens = [tokenize_and_clean(s) for s in TOY_SENTENCES]
     model = GibbsLDA(toy_tokens, num_topics=num_topics, alpha=0.1, beta=0.01, seed=42)
@@ -164,7 +164,6 @@ def api_summarize():
             beta=_flt("beta", DEFAULT_BETA),
             seed=_num("seed", DEFAULT_SEED),
             n_sentences=_num("n_sentences", DEFAULT_N_SENTENCES),
-            normalize_token_prob=bool(payload.get("normalize_token_prob", False)),
         )
     except ValueError as e:
         # Lỗi nghiệp vụ có thông báo tiếng Việt sẵn (quá ngắn / quá dài /

@@ -35,7 +35,7 @@ from core.vi_lexicon import (
 # Giới hạn đầu vào
 # ---------------------------------------------------------------------------
 MIN_SENTENCES = 5
-MAX_WORDS = 300
+MAX_WORDS = 10000
 MIN_WORD_LEN = 2
 
 # Ký tự được coi là "chữ" (gồm chữ tiếng Việt có dấu và không dấu)
@@ -304,7 +304,7 @@ def preprocess_document(text: str) -> dict:
             f"hiện chỉ tách được {len(sentences)} câu."
         )
 
-    # Giới hạn độ dài đầu vào (~300 từ)
+    # Giới hạn độ dài đầu vào (tối đa 10.000 từ)
     word_tokens = TOKEN_SPLIT_RE.findall(raw.lower())
     if len(word_tokens) > MAX_WORDS:
         raise PreprocessError(

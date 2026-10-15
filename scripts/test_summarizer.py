@@ -199,7 +199,7 @@ def test_e_preprocess_and_errors():
     cases = [
         ("rỗng", "", "Vui lòng nhập"),
         ("quá ngắn", "Một. Hai.", "ít nhất 5 câu"),
-        ("quá dài", "Câu một. " * 200, "quá dài"),
+        ("quá dài", "Câu một. " * 5005, "quá dài"),
     ]
     for name, text, expect in cases:
         try:
@@ -232,14 +232,18 @@ def test_e_summary(res):
         print(f"    {k + 1}. {label}   [{top}]")
     print(f"  Phân bố chủ đề toàn đoạn π = {res['topics']['pi']}")
 
-    print(f"\n  Điểm từng câu (eligible):")
+    print(f"\n  Điểm từng câu (Xác suất sinh hậu nghiệm Griffiths & Steyvers 2004):")
     for s in res["scores"]:
         mark = "✓ chọn" if s["sentence_index"] in res["mmr"]["selected"] else "  loại"
         if not s["eligible"]:
             mark = "— bỏ qua"
-        print(f"    câu {s['sentence_index'] + 1:>2}: {s['score']:.4f}  "
-              f"cos={s['cosine']:.3f}  p={s['token_prob']:.5f}  "
-              f"hệ số dài={s['length_factor']}  {mark}")
+            print(f"    câu {s['sentence_index'] + 1:>2}: {mark} ({s['reason']})")
+        else:
+            print(f"    câu {s['sentence_index'] + 1:>2}: score={s['score']:.4f}  "
+                  f"raw={s['raw_score']:.6f}  tokens={s['num_tokens']}  "
+                  f"topic_parts={[round(x, 4) for x in s['topic_parts']]}  {mark}")
+            assert "raw_score" in s and "topic_parts" in s and "score" in s
+            assert 0.0 <= s["score"] <= 1.0
 
     print(f"\n  Tóm tắt ({res['summary']['num_sentences_summary']}/"
           f"{res['summary']['num_sentences_original']} câu, "
@@ -249,9 +253,16 @@ def test_e_summary(res):
     for i, s in enumerate(res["summary"]["sentences"], 1):
         print(f"    {i}. {s['text']}")
 
-    print(f"\n  Vì sao các câu khác bị loại:")
+    print(f"\n  Các bước chọn JSD-MMR:")
+    for st in res["mmr"]["steps"]:
+        print(f"    Bước {st['step']}: chọn câu {st['chosen'] + 1} (score={st['chosen_score']:.4f})")
+        for c in st["candidates"]:
+            assert "js_divergence" in c and "redundancy" in c and "mmr" in c
+
+    print(f"\n  Vì sao các câu khác bị loại (D_JS & Score):")
     for r in res["mmr"]["rejected"]:
-        print(f"    câu {r['sentence_index'] + 1:>2}: {r['reason']}")
+        assert "js_divergence" in r and "similarity" in r and "reason" in r
+        print(f"    câu {r['sentence_index'] + 1:>2}: D_JS={r['js_divergence']:.4f}, sim={r['similarity']:.4f} -> {r['reason']}")
 
     print(f"\n  JSON payload: {res['meta']['json_bytes'] / 1024:.1f} KB, "
           f"trace vòng {res['meta']['traces_kept']}")

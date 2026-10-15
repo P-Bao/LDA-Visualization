@@ -545,10 +545,21 @@
   transition: opacity 300ms ease, transform 300ms ease;
 }
 
-.sum-tok--k0 { color: #0F766E; background: #CCFBF1; border-color: #99F6E4; }
-.sum-tok--k1 { color: #4338CA; background: #E0E7FF; border-color: #C7D2FE; }
-.sum-tok--k2 { color: #B45309; background: #FEF3C7; border-color: #FDE68A; }
-.sum-tok--k3 { color: #BE185D; background: #FCE7F3; border-color: #FBCFE8; }
+.sum-tok--k0  { color: #0F766E; background: #CCFBF1; border-color: #99F6E4; }
+.sum-tok--k1  { color: #4338CA; background: #E0E7FF; border-color: #C7D2FE; }
+.sum-tok--k2  { color: #B45309; background: #FEF3C7; border-color: #FDE68A; }
+.sum-tok--k3  { color: #BE185D; background: #FCE7F3; border-color: #FBCFE8; }
+.sum-tok--k4  { color: #059669; background: #D1FAE5; border-color: #A7F3D0; }
+.sum-tok--k5  { color: #2563EB; background: #DBEAFE; border-color: #BFDBFE; }
+.sum-tok--k6  { color: #7C3AED; background: #EDE9FE; border-color: #DDD6FE; }
+.sum-tok--k7  { color: #DC2626; background: #FEE2E2; border-color: #FECACA; }
+.sum-tok--k8  { color: #0284C7; background: #E0F2FE; border-color: #BAE6FD; }
+.sum-tok--k9  { color: #4D7C0F; background: #ECFCCB; border-color: #D9F99D; }
+.sum-tok--k10 { color: #D97706; background: #FEF3C7; border-color: #FDE68A; }
+.sum-tok--k11 { color: #9333EA; background: #F3E8FF; border-color: #E9D5FF; }
+.sum-tok--k12 { color: #E11D48; background: #FFE4E6; border-color: #FECDD3; }
+.sum-tok--k13 { color: #0891B2; background: #CFFAFE; border-color: #A5F3FC; }
+.sum-tok--k14 { color: #15803D; background: #DCFCE7; border-color: #BBF7D0; }
 
 .sum-tok--stop {
   color: var(--color-text-subtle);
@@ -654,10 +665,21 @@
 
 .sum-formula .op { color: var(--color-text-muted); padding: 0 2px; }
 .sum-formula .num { font-weight: var(--font-semibold); }
-.sum-formula .k0 { color: #0F766E; }
-.sum-formula .k1 { color: #4338CA; }
-.sum-formula .k2 { color: #B45309; }
-.sum-formula .k3 { color: #BE185D; }
+.sum-formula .k0  { color: #0F766E; }
+.sum-formula .k1  { color: #4338CA; }
+.sum-formula .k2  { color: #B45309; }
+.sum-formula .k3  { color: #BE185D; }
+.sum-formula .k4  { color: #059669; }
+.sum-formula .k5  { color: #2563EB; }
+.sum-formula .k6  { color: #7C3AED; }
+.sum-formula .k7  { color: #DC2626; }
+.sum-formula .k8  { color: #0284C7; }
+.sum-formula .k9  { color: #4D7C0F; }
+.sum-formula .k10 { color: #D97706; }
+.sum-formula .k11 { color: #9333EA; }
+.sum-formula .k12 { color: #E11D48; }
+.sum-formula .k13 { color: #0891B2; }
+.sum-formula .k14 { color: #15803D; }
 .sum-formula .win { font-weight: var(--font-bold); text-decoration: underline; }
 
 .sum-formula-note {
@@ -875,16 +897,6 @@
   overflow: hidden;
 }
 
-.sum-seg--penalty {
-  background: repeating-linear-gradient(
-    45deg,
-    rgba(180, 83, 9, 0.4),
-    rgba(180, 83, 9, 0.4) 4px,
-    rgba(180, 83, 9, 0.75) 4px,
-    rgba(180, 83, 9, 0.75) 8px
-  );
-  border-left: 1px dashed rgba(255, 255, 255, 0.4);
-}
 
 .sum-score-list { display: flex; flex-direction: column; gap: 7px; }
 

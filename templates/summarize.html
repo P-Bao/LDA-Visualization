@@ -31,7 +31,7 @@
     <h2>Văn bản đầu vào</h2>
     <form id="sumForm" class="sum-form" novalidate>
       <div>
-        <label class="sum-label" for="sumText">Đoạn văn tiếng Việt — tối đa 300 từ, ít nhất 5 câu</label>
+        <label class="sum-label" for="sumText">Đoạn văn tiếng Việt — tối đa 10.000 từ, ít nhất 5 câu</label>
         <textarea id="sumText" name="text" class="sum-textarea" rows="8" spellcheck="false">{{ sample_text }}</textarea>
         <div style="display:flex; justify-content:space-between; align-items:center; gap:var(--space-3); margin-top:6px; flex-wrap:wrap;">
           <span class="sum-counter" id="sumCounter"></span>
@@ -87,33 +87,6 @@
       Phím tắt: <b>Space</b> phát / tạm dừng · <b>←</b> <b>→</b> lùi / tiến một bước ·
       <b>Shift + ←</b> <b>Shift + →</b> chuyển cảnh · <b>Home</b> <b>End</b> về đầu / cuối
     </p>
-  </section>
-
-  <!-- ==================== GHI CHÚ ==================== -->
-  <section>
-    <details class="card" style="padding:var(--space-4) var(--space-5);">
-      <summary style="cursor:pointer; font-weight:600; color:var(--color-primary);">
-        Cách tính điểm câu và chọn câu (MMR)
-      </summary>
-      <div style="margin-top:var(--space-4); line-height:1.7; color:var(--color-text-secondary);">
-        <p style="margin-top:0;">
-          <b>Phân bố chủ đề toàn đoạn</b> π là trung bình của θ các câu, có trọng số theo số token của từng câu.
-        </p>
-        <p>
-          <b>Điểm câu</b> = (0,6 × cos(θ câu, π) + 0,4 × xác suất trung bình của các từ câu đó
-          dưới hỗn hợp ∑<sub>k</sub> π<sub>k</sub>·φ<sub>k</sub>) × hệ số độ dài.
-          Câu quá ngắn hoặc quá dài bị nhân hệ số &lt; 1.
-        </p>
-        <p>
-          <b>MMR</b> (Maximal Marginal Relevance) chọn lần lượt: MMR = λ × độ liên quan − (1−λ) × độ trùng ý
-          lớn nhất với các câu đã chọn, với λ = 0,7. Nhờ vậy bản tóm tắt không bị dồn vào một ý.
-        </p>
-        <p style="margin-bottom:0;">
-          Các câu không còn từ nội dung sau khi lọc stopword sẽ bị bỏ qua ở bước chấm điểm,
-          nhưng vẫn hiện ở cảnh 1–3 kèm ghi chú.
-        </p>
-      </div>
-    </details>
   </section>
 </main>
 {% endblock %}

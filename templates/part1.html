@@ -40,12 +40,12 @@
     <div class="param-card">
       <form method="GET" action="/part1" class="param-form">
         <div class="param-group">
-          <label for="num_topics">Số chủ đề K (2 – 4)</label>
-          <input type="number" id="num_topics" name="num_topics" min="2" max="4" value="{{ num_topics }}" required>
+          <label for="num_topics">Số chủ đề K (2 – 15)</label>
+          <input type="number" id="num_topics" name="num_topics" min="2" max="15" value="{{ num_topics }}" required>
         </div>
         <div class="param-group">
-          <label for="num_iterations">Số vòng lặp Gibbs (5 – 60)</label>
-          <input type="number" id="num_iterations" name="num_iterations" min="5" max="60" value="{{ num_iterations }}" required>
+          <label for="num_iterations">Số vòng lặp Gibbs (5 – 1000)</label>
+          <input type="number" id="num_iterations" name="num_iterations" min="5" max="1000" value="{{ num_iterations }}" required>
         </div>
         <div>
           <button type="submit" class="btn btn-primary param-btn">
@@ -150,8 +150,12 @@ const sentences = {{ sentences | tojson }};
 const tokens = {{ tokens | tojson }};
 const numTopics = {{ num_topics }};
 
-// Direction B palette for topic categorical mapping
-const topicColors = ['#0D9488', '#4F46E5', '#059669', '#B45309', '#BE185D', '#2563EB'];
+// 15 distinct colors for K <= 15
+const topicColors = [
+  '#0D9488', '#4F46E5', '#059669', '#B45309', '#BE185D',
+  '#2563EB', '#7C3AED', '#DC2626', '#0284C7', '#65A30D',
+  '#D97706', '#9333EA', '#E11D48', '#0891B2', '#4D7C0F'
+];
 const fontStack = "'Be Vietnam Pro', system-ui, -apple-system, sans-serif";
 
 const slider = document.getElementById('stepSlider');

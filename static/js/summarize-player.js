@@ -9,9 +9,12 @@
   /* ------------------------------------------------------------------
      Hằng số
      ------------------------------------------------------------------ */
-  // Màu chủ đề: dùng đậm hơn bảng ở Phần 1 để chip có nền nhạt vẫn đủ tương
-  // phản; 4 màu phân biệt rõ nhau, khớp token Teal/Indigo của trang.
-  var PALETTE = ['#0F766E', '#4338CA', '#B45309', '#BE185D'];
+  // Màu chủ đề: mở rộng 15 màu phân biệt rõ nhau để hỗ trợ K = 2..15
+  var PALETTE = [
+    '#0F766E', '#4338CA', '#B45309', '#BE185D', '#059669',
+    '#2563EB', '#7C3AED', '#DC2626', '#0284C7', '#4D7C0F',
+    '#D97706', '#9333EA', '#E11D48', '#0891B2', '#15803D'
+  ];
 
   var REDUCED = window.matchMedia
     ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -49,9 +52,9 @@
     { n: 8, title: 'Kết quả chủ đề', beat: 'default',
       sub: 'Sau khi hội tụ, mỗi chủ đề gom một nhóm từ. Nhãn chủ đề chính là vài từ đặc trưng đứng đầu.' },
     { n: 9, title: 'Chấm điểm từng câu', beat: 'default',
-      sub: 'Câu nào giống chủ đề chung của cả đoạn và chứa từ dễ sinh ra sẽ được ưu tiên trong bản tóm tắt.' },
+      sub: 'Xác suất sinh trung bình của các từ trong câu theo phân phối chủ đề toàn đoạn π và chủ đề câu θ.' },
     { n: 10, title: 'Chọn câu bằng MMR', beat: 'default',
-      sub: 'MMR vừa thưởng độ liên quan, vừa phạt câu trùng ý với những câu đã chọn — để bản tóm tắt có đủ nét khác nhau.' },
+      sub: 'Chọn câu bằng MMR kết hợp điểm xác suất sinh Score(d) và độ tương đồng phân phối chủ đề Sim_JS.' },
     { n: 11, title: 'Bản tóm tắt', beat: 'out',
       sub: 'Các câu được chọn được ghép lại theo ĐÚNG thứ tự gốc, không sắp xếp lại — đọc vẫn liền mạch.' }
   ];
@@ -642,7 +645,7 @@
 
     // công thức
     var fx = el('div', 'sum-formula');
-    var html = 'P(k) ∝ (n_dk + α) · (n_kw + β) / (n_k + V·β)<br>';
+    var html = 'P(z_i = k | z_{-i}, w) ∝ (n_{d,k}^{-i} + α) · (n_{k,w}^{-i} + β) / (n_k^{-i} + V·β)<br>';
     for (var k = 0; k < K; k++) {
       html += '<span class="k' + k + '">k=' + (k + 1) + '</span>: ('
         + t.n_dk[k] + ' + ' + alpha + ') · ('
@@ -1011,14 +1014,10 @@
 
   // --- Cảnh 9: chấm điểm câu --------------------------------------------
   RENDER[9] = function (data) {
+    var K = data.params.num_topics;
     var wrap = el('div', 'sum-stage-inner');
     wrap.appendChild(el('h3', null,
-      'Điểm = (0,6 × cos(θ câu, π toàn đoạn) + 0,4 × xác suất trung bình của các từ) × hệ số độ dài'));
-
-    var eligibleList = data.scores.filter(function (s) { return s.eligible; });
-    var scale = Math.max.apply(null, eligibleList.map(function (s) {
-      return s.raw !== undefined ? s.raw : (0.6 * s.cosine + 0.4 * s.token_prob);
-    })) || 1;
+      'RawScore(d) = (1/n_d) ∑_{w∈d} ∑_{k=1..K} π_k · θ_{d,k} · φ_{k,w}   →   Score(d) = RawScore(d) / max RawScore'));
 
     var list = el('div', 'sum-score-list');
     data.scores.forEach(function (sc) {
@@ -1027,32 +1026,13 @@
       r.appendChild(el('span', 'sum-hm-rowlabel', 'C' + (sc.sentence_index + 1)));
       var bar = el('div', 'sum-score-bar');
       if (sc.eligible) {
-        var partCos = sc.part_cos !== undefined ? sc.part_cos : (0.6 * sc.cosine);
-        var partP = sc.part_p !== undefined ? sc.part_p : (0.4 * sc.token_prob);
-        var raw = sc.raw !== undefined ? sc.raw : (partCos + partP);
-
-        // đoạn A: cos
-        var a = el('i');
-        a.style.width = ((partCos / scale) * 100).toFixed(1) + '%';
-        a.style.background = PALETTE[0];
-        a.title = '0,6 × cos = ' + fmt(partCos, 4);
-        bar.appendChild(a);
-
-        // đoạn B: token prob
-        var b = el('i');
-        b.style.width = ((partP / scale) * 100).toFixed(1) + '%';
-        b.style.background = PALETTE[1];
-        b.title = '0,4 × xác suất = ' + fmt(partP, 4);
-        bar.appendChild(b);
-
-        // đoạn phạt độ dài (nếu có)
-        if (sc.length_factor < 1) {
-          var pen = raw * (1 - sc.length_factor);
-          var penW = (pen / scale) * 100;
-          var c = el('i', 'sum-seg--penalty');
-          c.style.width = Math.max(1, penW).toFixed(1) + '%';
-          c.title = 'Phạt độ dài (hệ số ×' + sc.length_factor + '): trừ ~' + fmt(pen, 3) + ' điểm — ' + sc.reason;
-          bar.appendChild(c);
+        for (var k = 0; k < K; k++) {
+          var normPart = (sc.topic_parts_norm && sc.topic_parts_norm[k]) || 0;
+          var seg = el('i');
+          seg.style.width = (normPart * 100).toFixed(1) + '%';
+          seg.style.background = topicColor(k);
+          seg.title = 'Chủ đề ' + (k + 1) + ': π_' + (k + 1) + ' · θ · φ̄ = ' + fmt(sc.topic_parts[k], 5);
+          bar.appendChild(seg);
         }
       } else {
         var d = el('i');
@@ -1067,58 +1047,51 @@
     wrap.appendChild(list);
 
     var key = el('div', 'sum-theta-key');
-    key.appendChild(keyItem(PALETTE[0], '0,6 × cos(θ, π)'));
-    key.appendChild(keyItem(PALETTE[1], '0,4 × xác suất từ'));
-    var penKey = el('span', 'sum-key-item');
-    penKey.innerHTML = '<span class="sum-key-dot sum-seg--penalty" style="display:inline-block;width:10px;height:10px;border-radius:3px;"></span> phạt độ dài (gạch chéo)';
-    key.appendChild(penKey);
+    for (var k2 = 0; k2 < K; k2++) {
+      key.appendChild(keyItem(topicColor(k2), 'Chủ đề ' + (k2 + 1) + ' (π_' + (k2 + 1) + '·θ·φ̄)'));
+    }
     wrap.appendChild(key);
 
     // bảng chi tiết
     var tw = el('div', 'sum-table-wrap');
     var t = el('table', 'sum-table');
-    t.innerHTML = '<thead><tr><th>Câu</th><th class="num">cos(θ, π)</th>'
-      + '<th class="num">0,6 × cos</th><th class="num">xác suất TB</th>'
-      + '<th class="num">0,4 × p</th><th class="num">p chiếm %</th><th class="num">hệ số dài</th>'
-      + '<th class="num">Điểm</th><th>Ghi chú</th></tr></thead>';
+    var headHtml = '<thead><tr><th>Câu</th><th class="num">Số từ (n_d)</th>';
+    for (var kh = 0; kh < K; kh++) {
+      headHtml += '<th class="num" style="color:' + topicColor(kh) + '">π_' + (kh + 1) + '·θ·φ̄_' + (kh + 1) + '</th>';
+    }
+    headHtml += '<th class="num">RawScore</th><th class="num">Score [0, 1]</th><th>Kết quả</th></tr></thead>';
+    t.innerHTML = headHtml;
+
     var tb = el('tbody');
     data.scores.forEach(function (sc) {
       var picked = data.mmr.selected.indexOf(sc.sentence_index) >= 0;
       var tr = el('tr', picked ? 'is-picked' : '');
-      var partCos = sc.part_cos !== undefined ? sc.part_cos : (0.6 * sc.cosine);
-      var partP = sc.part_p !== undefined ? sc.part_p : (0.4 * sc.token_prob);
-      var raw = sc.raw !== undefined ? sc.raw : (partCos + partP);
-      var pPct = (sc.eligible && raw > 0) ? (partP / raw * 100).toFixed(1) + '%' : '—';
-
-      tr.innerHTML = '<td>Câu ' + (sc.sentence_index + 1) + '</td>'
-        + '<td class="num">' + (sc.eligible ? fmt(sc.cosine, 3) : '—') + '</td>'
-        + '<td class="num">' + (sc.eligible ? fmt(partCos, 3) : '—') + '</td>'
-        + '<td class="num">' + (sc.eligible ? fmt(sc.token_prob, 5) : '—') + '</td>'
-        + '<td class="num">' + (sc.eligible ? fmt(partP, 4) : '—') + '</td>'
-        + '<td class="num">' + pPct + '</td>'
-        + '<td class="num">' + (sc.eligible ? '×' + sc.length_factor : '—') + '</td>'
-        + '<td class="num">' + (sc.eligible ? fmt(sc.score, 3) : '—') + '</td>'
-        + '<td>' + esc(sc.reason || (picked ? 'được chọn' : '')) + '</td>';
+      var rowHtml = '<td>Câu ' + (sc.sentence_index + 1) + '</td>';
+      if (sc.eligible) {
+        rowHtml += '<td class="num">' + sc.num_tokens + '</td>';
+        for (var k3 = 0; k3 < K; k3++) {
+          rowHtml += '<td class="num" style="color:' + topicColor(k3) + '">' + fmt(sc.topic_parts[k3], 5) + '</td>';
+        }
+        rowHtml += '<td class="num">' + fmt(sc.raw_score, 5) + '</td>'
+          + '<td class="num"><b>' + fmt(sc.score, 3) + '</b></td>'
+          + '<td>' + (picked ? '✓ được chọn' : (sc.reason || 'ứng viên')) + '</td>';
+      } else {
+        rowHtml += '<td class="num">0</td>';
+        for (var k4 = 0; k4 < K; k4++) {
+          rowHtml += '<td class="num">—</td>';
+        }
+        rowHtml += '<td class="num">—</td><td class="num">—</td>'
+          + '<td>' + esc(sc.reason) + '</td>';
+      }
+      tr.innerHTML = rowHtml;
       tb.appendChild(tr);
     });
     t.appendChild(tb);
     tw.appendChild(t);
     wrap.appendChild(tw);
 
-    // Ghi chú sinh động từ dữ liệu
-    var avgPPct = '0.0';
-    if (eligibleList.length) {
-      var totalPPct = eligibleList.reduce(function (sum, s) {
-        var r = s.raw !== undefined ? s.raw : (0.6 * s.cosine + 0.4 * s.token_prob);
-        var p = s.part_p !== undefined ? s.part_p : (0.4 * s.token_prob);
-        return sum + (r > 0 ? (p / r) : 0);
-      }, 0);
-      avgPPct = (totalPPct / eligibleList.length * 100).toFixed(1);
-    }
-    var noteText = (data.params && data.params.normalize_token_prob)
-      ? ('Đã bật chuẩn hoá xác suất từ (normalize_token_prob): thành phần p được kéo về cùng bậc độ lớn với cosin, trung bình p đóng góp ' + avgPPct + '% điểm.')
-      : ('Trung bình thành phần xác suất từ chỉ đóng góp ' + avgPPct + '% điểm; điểm chủ yếu do độ giống chủ đề (cos).');
-    wrap.appendChild(el('p', 'sum-formula-note', noteText));
+    wrap.appendChild(el('p', 'sum-formula-note',
+      'Score(d) = RawScore(d) / max_{d\'} RawScore(d\') ∈ [0, 1].'));
 
     return wrap;
   };
@@ -1128,7 +1101,7 @@
     var stepIdx = frame.data ? frame.data.stepIndex : 0;
     var wrap = el('div', 'sum-stage-inner');
     wrap.appendChild(el('h3', null,
-      'MMR: chọn câu có điểm cao, nhưng bị trừ điểm nếu ý nói giống câu đã chọn (λ = '
+      'MMR(d) = λ · Score(d) − (1 − λ) · max_{j∈S} Sim_JS(θ_d, θ_j)   với Sim_JS = 1 − D_JS  (λ = '
       + data.mmr.lambda + ')'));
 
     data.mmr.steps.forEach(function (st, i) {
@@ -1137,25 +1110,27 @@
       var head = el('div', 'sum-mmr-head');
       head.appendChild(el('span', 'sum-mmr-badge', 'Bước ' + st.step));
       head.appendChild(el('b', null, 'Chọn câu ' + (st.chosen + 1)
-        + ' (điểm ' + fmt(st.chosen_score, 3) + ')'));
+        + ' (Score = ' + fmt(st.chosen_score, 3) + (st.mmr_value !== undefined ? ', MMR = ' + fmt(st.mmr_value, 3) : '') + ')'));
       card.appendChild(head);
       card.appendChild(el('p', 'sum-mmr-note', esc(st.note)));
 
       if (st.candidates && st.candidates.length) {
         var tw = el('div', 'sum-table-wrap');
         var t = el('table', 'sum-table');
-        t.innerHTML = '<thead><tr><th>Câu</th><th class="num">độ liên quan</th>'
-          + '<th class="num">trùng ý (cos)</th><th class="num">MMR</th><th>Kết quả</th></tr></thead>';
+        t.innerHTML = '<thead><tr><th>Câu</th><th class="num">Score(d)</th>'
+          + '<th class="num">D_JS</th><th class="num">Sim_JS</th><th class="num">MMR</th><th>Kết quả</th></tr></thead>';
         var tb = el('tbody');
-        st.candidates.slice(0, 6).forEach(function (c) {
+        st.candidates.slice(0, 8).forEach(function (c) {
           var won = c.sentence_index === st.chosen;
           var tr = el('tr', won ? 'is-picked' : '');
+          var jsDiv = c.js_divergence !== undefined ? c.js_divergence : (1 - c.redundancy);
           tr.innerHTML = '<td>Câu ' + (c.sentence_index + 1) + '</td>'
             + '<td class="num">' + fmt(c.relevance, 3) + '</td>'
+            + '<td class="num">' + fmt(jsDiv, 3) + '</td>'
             + '<td class="num">' + fmt(c.redundancy, 3)
             + (c.redundant_with !== null ? ' (với câu ' + (c.redundant_with + 1) + ')' : '') + '</td>'
             + '<td class="num">' + fmt(c.mmr, 3) + '</td>'
-            + '<td>' + (won ? 'được chọn' : 'giữ lại dự phòng') + '</td>';
+            + '<td>' + (won ? '✓ được chọn' : 'dự phòng') + '</td>';
           tb.appendChild(tr);
         });
         t.appendChild(tb);
@@ -1677,8 +1652,8 @@
     var ta = $('#sumText');
     var words = ta.value.trim() ? ta.value.trim().split(/\s+/).length : 0;
     var c = $('#sumCounter');
-    c.textContent = words + ' từ' + (words > 300 ? ' — vượt giới hạn 300 từ' : '');
-    c.className = 'sum-counter' + (words > 300 ? ' sum-counter--over' : '');
+    c.textContent = words + ' từ' + (words > 10000 ? ' — vượt giới hạn 10.000 từ' : '');
+    c.className = 'sum-counter' + (words > 10000 ? ' sum-counter--over' : '');
   }
 
   if (document.readyState === 'loading') {

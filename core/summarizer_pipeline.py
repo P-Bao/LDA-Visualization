@@ -11,8 +11,8 @@ Mỗi bước đều trả về dữ liệu trung gian để giao diện dựng 
   2. Ma trận đếm : câu × từ (heatmap)
   3. Huấn luyện   : vòng 1 (và 2) ghi trace từng token, các vòng sau gọn
   4. Chủ đề       : nhãn + top từ + theta từng câu
-  5. Chấm điểm câu: 0.6*cos(theta_d, pi) + 0.4*xác suất token, có phạt độ dài
-  6. MMR          : chọn câu đa dạng (lambda=0.7), giữ thứ tự gốc
+  5. Chấm điểm câu: Xác suất sinh hậu nghiệm trung bình (Griffiths & Steyvers 2004)
+  6. MMR          : JSD-MMR trên đơn hình Dirichlet (lambda=0.7), giữ thứ tự gốc
 """
 
 import math
@@ -27,26 +27,20 @@ from core.trace_lda import TracedGibbsLDA
 # ---------------------------------------------------------------------------
 DEFAULT_NUM_TOPICS = 2
 MIN_NUM_TOPICS = 2
-MAX_NUM_TOPICS = 4
+MAX_NUM_TOPICS = 15
 DEFAULT_ALPHA = 0.5
 DEFAULT_BETA = 0.1
 DEFAULT_ITERATIONS = 30
 MIN_ITERATIONS = 1
-MAX_ITERATIONS = 120
+MAX_ITERATIONS = 5000
 DEFAULT_SEED = 42
 DEFAULT_N_SENTENCES = 3
 MIN_N_SENTENCES = 2
-MAX_N_SENTENCES = 5
+MAX_N_SENTENCES = 15
 DEFAULT_MMR_LAMBDA = 0.7
 
-# Phạt độ dài: câu quá ngắn hoặc quá dài bị nhân hệ số
-SHORT_SENTENCE_TOKENS = 4
-LONG_SENTENCE_TOKENS = 26
-SHORT_SENTENCE_FACTOR = 0.85
-LONG_SENTENCE_FACTOR = 0.92
-
-# Ngưỡng kích thước JSON: nếu vượt thì chỉ giữ trace vòng 1
-MAX_JSON_BYTES = 3 * 1024 * 1024
+# Phương án A: Giữ đầy đủ toàn bộ snapshot cho tới 5000 vòng lặp
+MAX_JSON_BYTES = 50 * 1024 * 1024
 
 
 class PipelineError(ValueError):
@@ -54,58 +48,53 @@ class PipelineError(ValueError):
 
 
 # ---------------------------------------------------------------------------
-# HÀM TOÁN HỌC
+# HÀM LÝ THUYẾT THÔNG TIN (KL & Jensen-Shannon trên đơn hình Dirichlet)
 # ---------------------------------------------------------------------------
 
-def _cosine(a, b):
-    """Cosine similarity của 2 vectơ (list float)."""
-    dot = sum(x * y for x, y in zip(a, b))
-    na = math.sqrt(sum(x * x for x in a))
-    nb = math.sqrt(sum(y * y for y in b))
-    if na == 0.0 or nb == 0.0:
-        return 0.0
-    return dot / (na * nb)
-
-
-def _length_factor(num_tokens):
-    """Hệ số phạt nhẹ cho câu quá ngắn / quá dài."""
-    if num_tokens < SHORT_SENTENCE_TOKENS:
-        return SHORT_SENTENCE_FACTOR
-    if num_tokens > LONG_SENTENCE_TOKENS:
-        return LONG_SENTENCE_FACTOR
-    return 1.0
-
-
-def _length_reason(num_tokens):
-    """Giải thích bằng lời cho hệ số phạt (hiển thị ở cảnh 9)."""
-    if num_tokens < SHORT_SENTENCE_TOKENS:
-        return f"câu quá ngắn ({num_tokens} từ nội dung)"
-    if num_tokens > LONG_SENTENCE_TOKENS:
-        return f"câu quá dài ({num_tokens} từ nội dung)"
-    return ""
-
-
-# ---------------------------------------------------------------------------
-# CHẤM ĐIỂM & MMR
-# ---------------------------------------------------------------------------
-
-def score_sentences(model, docs_tokens, pi, lda_index_map, sentences,
-                    normalize_token_prob=False):
+def _kl_divergence(p, q):
     """
-    Chấm điểm từng câu.
+    Phân kỳ Kullback-Leibler D_KL(P || Q) = sum_k P_k * ln(P_k / Q_k)
+    (Blei, Ng & Jordan, JMLR 2003, Eq. 5).
+    """
+    kl = 0.0
+    for pk, qk in zip(p, q):
+        if pk > 1e-12:
+            kl += pk * math.log(pk / max(qk, 1e-12))
+    return max(0.0, kl)
 
-        score(câu) = (0.6 * cos(theta_d, pi)      # câu có nội dung giống chủ đề
-                                   đại diện của cả đoạn không?\r
-                    + 0.4 * trung_bình_xác_suất_token)  # từ trong câu có dễ
-                                    * he_so_do_dai       # thuộc chủ đề không?
 
-    Tham số normalize_token_prob (mặc định False — D2):
-        Khi True: chia token_prob mỗi câu cho max(token_prob) trước khi tính
-        điểm, giúp phần p cùng bậc độ lớn với phần cos.
-        Khi False: hành vi gốc, không đổi kết quả tóm tắt.
+def _js_divergence(p, q):
+    """
+    Phân kỳ Jensen-Shannon chuẩn hoá về [0, 1] trên đơn hình Dirichlet:
+    D_JS(P || Q) = [0.5 * D_KL(P || M) + 0.5 * D_KL(Q || M)] / ln(2), với M = 0.5*(P + Q)
+    (Lin, 1991; Louis & Nenkova, EMNLP 2009; Hennig, RANLP 2009).
+    """
+    m = [0.5 * (pk + qk) for pk, qk in zip(p, q)]
+    js = 0.5 * _kl_divergence(p, m) + 0.5 * _kl_divergence(q, m)
+    norm_js = js / math.log(2.0)
+    return min(1.0, max(0.0, norm_js))
 
-    Trả về danh sách dict (mỗi câu 1 phần tử) kèm từng thành phần điểm.
-    Khoá bổ sung (tương thích ngược): part_cos, part_p, raw.
+
+def _js_similarity(p, q):
+    """
+    Độ tương đồng chủ đề trên đơn hình Dirichlet: Sim_JS(P, Q) = 1 - D_JS(P || Q) thuộc [0, 1].
+    """
+    return 1.0 - _js_divergence(p, q)
+
+
+# ---------------------------------------------------------------------------
+# CHẤM ĐIỂM (CẢNH 9) & MMR (CẢNH 10)
+# ---------------------------------------------------------------------------
+
+def score_sentences(model, docs_tokens, pi, lda_index_map, sentences):
+    """
+    Chấm điểm từng câu dựa trên Xác suất Sinh Hậu nghiệm Trung bình
+    (Griffiths & Steyvers, PNAS 2004 - Eq. 1, 6, 7 & Haghighi & Vanderwende, NAACL 2009):
+
+        RawScore(d) = (1 / n_d) * sum_{w in d} sum_{k=1..K} [ pi_k * theta_{d,k} * phi_{k,w} ]
+                    = sum_{k=1..K} topic_parts[k]
+
+    Score(d) = RawScore(d) / max_{d'} RawScore(d') thuộc [0, 1].
     """
     theta = model.theta()
     phi = model.phi_full()
@@ -114,37 +103,39 @@ def score_sentences(model, docs_tokens, pi, lda_index_map, sentences,
     results = []
     for sent_idx, doc_idx in enumerate(lda_index_map):
         if doc_idx < 0:
-            # Câu không còn từ nội dung: không tham gia chấm điểm/chọn câu
             results.append(
                 {
                     "sentence_index": sent_idx,
                     "lda_doc": None,
                     "eligible": False,
                     "theta": [0.0] * K,
-                    "cosine": 0.0,
-                    "token_prob": 0.0,
-                    "length_factor": 0.0,
+                    "mean_phi": [0.0] * K,
+                    "topic_parts": [0.0] * K,
+                    "topic_parts_norm": [0.0] * K,
+                    "raw_score": 0.0,
                     "score": 0.0,
                     "num_tokens": 0,
                     "reason": "không còn từ nội dung",
-                    "part_cos": 0.0,
-                    "part_p": 0.0,
-                    "raw": 0.0,
                 }
             )
             continue
 
         tokens = docs_tokens[doc_idx]
         theta_d = theta[doc_idx]
+        n_tok = len(tokens)
 
-        cos_sim = _cosine(theta_d, pi)
+        mean_phi = []
+        topic_parts = []
+        for k in range(K):
+            m_phi_k = (
+                sum(phi[k][model.word2id[word]] for word in tokens) / n_tok
+                if n_tok
+                else 0.0
+            )
+            mean_phi.append(m_phi_k)
+            topic_parts.append(pi[k] * theta_d[k] * m_phi_k)
 
-        total_prob = 0.0
-        for word in tokens:
-            w = model.word2id[word]
-            p_word = sum(pi[k] * phi[k][w] for k in range(K))
-            total_prob += p_word
-        token_prob = total_prob / len(tokens) if tokens else 0.0
+        raw_score = sum(topic_parts)
 
         results.append(
             {
@@ -152,71 +143,51 @@ def score_sentences(model, docs_tokens, pi, lda_index_map, sentences,
                 "lda_doc": doc_idx,
                 "eligible": True,
                 "theta": [round(v, 4) for v in theta_d],
-                "cosine": round(cos_sim, 4),
-                "token_prob": round(token_prob, 6),
-                "length_factor": _length_factor(len(tokens)),
-                "score": None,   # tính sau khi chuẩn hoá (nếu cần)
-                "num_tokens": len(tokens),
-                "reason": _length_reason(len(tokens)),
+                "mean_phi": [round(v, 6) for v in mean_phi],
+                "topic_parts": [round(v, 6) for v in topic_parts],
+                "topic_parts_norm": [0.0] * K,
+                "raw_score": round(raw_score, 6),
+                "score": 0.0,
+                "num_tokens": n_tok,
+                "reason": "",
             }
         )
 
-    # --- Chuẩn hoá token_prob (nếu bật cờ) ----------------------------------
     eligible_results = [r for r in results if r["eligible"]]
-    if normalize_token_prob and eligible_results:
-        max_p = max(r["token_prob"] for r in eligible_results) or 1.0
-    else:
-        max_p = 1.0  # không chuẩn hoá: chia cho 1 không đổi gì
+    max_raw = max((r["raw_score"] for r in eligible_results), default=0.0) or 1.0
 
     for r in results:
         if not r["eligible"]:
             continue
-        token_prob_used = r["token_prob"] / max_p
-        part_cos = 0.6 * r["cosine"]
-        part_p = 0.4 * token_prob_used
-        raw = part_cos + part_p
-        factor = r["length_factor"]
-        r["score"] = round(raw * factor, 4)
-        r["part_cos"] = round(part_cos, 6)
-        r["part_p"] = round(part_p, 6)
-        r["raw"] = round(raw, 6)
+        r["topic_parts_norm"] = [round(p / max_raw, 4) for p in r["topic_parts"]]
+        r["score"] = round(r["raw_score"] / max_raw, 4)
 
     return results
 
 
-
 def select_sentences_mmr(scores, theta, n_sentences, mmr_lambda=DEFAULT_MMR_LAMBDA):
     """
-    Chọn câu bằng MMR (Maximal Marginal Relevance):
+    Chọn câu bằng JSD-MMR trên đơn hình Dirichlet
+    (Blei et al., 2003, Eq. 5; Louis & Nenkova, EMNLP 2009; Hennig, RANLP 2009;
+     Carbonell & Goldstein, SIGIR 1998):
 
-        MMR(d) = lambda * relevance(d) - (1 - lambda) * max_sim(d, đã chọn)
-
-    relevance = điểm câu đã chuẩn hoá min-max về [0, 1]
-    max_sim   = cosine lớn nhất giữa theta_d và theta của các câu đã chọn
-                (câu nào "trùng ý" nhất với phần đã chọn)
-
-    Trả về (danh sách câu đã chọn, từng bước chọn để hiển thị ở cảnh 10).
+        MMR_JS(d) = lambda * Score(d) - (1 - lambda) * max_{j in S} Sim_JS(theta_d, theta_j)
+        với Sim_JS(P, Q) = 1 - D_JS(P || Q) thuộc [0, 1].
     """
     eligible = [s for s in scores if s["eligible"]]
     if not eligible:
         return [], []
 
-    # tra cứu nhanh theta của từng câu theo sentence_index
     theta_of = {
         s["sentence_index"]: theta[s["lda_doc"]] for s in eligible
     }
-
-    values = [s["score"] for s in eligible]
-    lo, hi = min(values), max(values)
-    span = (hi - lo) or 1.0
-    relevance = {s["sentence_index"]: (s["score"] - lo) / span for s in eligible}
 
     n_select = max(1, min(n_sentences, len(eligible)))
 
     selected = []
     steps = []
 
-    # Bước 1: câu có điểm cao nhất
+    # Bước 1: câu có xác suất sinh hậu nghiệm Score(d) cao nhất
     first = max(eligible, key=lambda s: s["score"])
     selected.append(first["sentence_index"])
     steps.append(
@@ -225,7 +196,7 @@ def select_sentences_mmr(scores, theta, n_sentences, mmr_lambda=DEFAULT_MMR_LAMB
             "chosen": first["sentence_index"],
             "chosen_score": first["score"],
             "candidates": [],
-            "note": "Chọn câu trùng chủ đề toàn đoạn nhất làm câu trung tâm.",
+            "note": "Bước 1: Chọn câu có xác suất sinh hậu nghiệm Score(d) cao nhất làm hạt nhân chủ đề.",
         }
     )
 
@@ -235,29 +206,33 @@ def select_sentences_mmr(scores, theta, n_sentences, mmr_lambda=DEFAULT_MMR_LAMB
         for cand in eligible:
             if cand["sentence_index"] in selected:
                 continue
-            rel = relevance[cand["sentence_index"]]
-            sim, sim_with = 0.0, None
+            rel = cand["score"]
+            cand_theta = theta_of[cand["sentence_index"]]
+            sim, min_jsd, sim_with = 0.0, 1.0, None
             for sel in selected:
-                s_val = _cosine(cand["theta"], theta_of[sel])
+                s_val = _js_similarity(cand_theta, theta_of[sel])
                 if s_val > sim:
-                    sim, sim_with = s_val, sel
+                    sim = s_val
+                    min_jsd = 1.0 - s_val
+                    sim_with = sel
             mmr = mmr_lambda * rel - (1.0 - mmr_lambda) * sim
             candidates.append(
                 {
                     "sentence_index": cand["sentence_index"],
                     "mmr": round(mmr, 4),
                     "relevance": round(rel, 4),
+                    "js_divergence": round(min_jsd, 4),
                     "redundancy": round(sim, 4),
                     "redundant_with": sim_with,
                 }
             )
             if best is None or mmr > best[0]:
-                best = (mmr, cand, sim_with)
+                best = (mmr, cand, sim_with, min_jsd)
 
         if best is None:
             break
 
-        mmr_val, chosen, sim_with = best
+        mmr_val, chosen, sim_with, min_jsd = best
         selected.append(chosen["sentence_index"])
         candidates.sort(key=lambda c: c["mmr"], reverse=True)
         steps.append(
@@ -268,9 +243,9 @@ def select_sentences_mmr(scores, theta, n_sentences, mmr_lambda=DEFAULT_MMR_LAMB
                 "mmr_value": round(mmr_val, 4),
                 "candidates": candidates,
                 "note": (
-                    f"Cân bằng giữa độ trùng chủ đề và sự khác biệt "
-                    f"(λ={mmr_lambda}); câu đã chọn gần nhất là câu "
-                    f"{(sim_with + 1) if sim_with is not None else '—'}."
+                    f"Cực đại hoá JSD-MMR (λ={mmr_lambda}); câu đã chọn gần chủ đề nhất là câu "
+                    f"{(sim_with + 1) if sim_with is not None else '—'} "
+                    f"(D_JS={min_jsd:.3f}, Sim_JS={1.0 - min_jsd:.3f})."
                 ),
             }
         )
@@ -279,33 +254,37 @@ def select_sentences_mmr(scores, theta, n_sentences, mmr_lambda=DEFAULT_MMR_LAMB
 
 
 def _rejected_reasons(scores, selected, theta):
-    """Giải thích vì sao các câu còn lại bị loại (cho cảnh 10)."""
+    """Giải thích vì sao các câu còn lại bị loại dựa trên D_JS và Score(d) (cho cảnh 10)."""
     rejected = []
     selected_scores = [s for s in scores if s["sentence_index"] in selected]
-    best_selected = min((s["score"] for s in selected_scores), default=0.0)
+    min_selected_score = min((s["score"] for s in selected_scores), default=0.0)
 
     for s in scores:
         if not s["eligible"] or s["sentence_index"] in selected:
             continue
+        s_theta = theta[s["lda_doc"]]
         sim, sim_with = 0.0, None
         for sel_score in selected_scores:
-            s_val = _cosine(s["theta"], theta[sel_score["lda_doc"]])
+            s_val = _js_similarity(s_theta, theta[sel_score["lda_doc"]])
             if s_val > sim:
                 sim, sim_with = s_val, sel_score["sentence_index"]
+        js_div = 1.0 - sim
         if sim >= 0.75:
             reason = (
-                f"trùng ý với câu {sim_with + 1} (cos={sim:.2f} ≥ 0.75)"
+                f"phân phối chủ đề trùng lặp với câu {sim_with + 1} "
+                f"(Sim_JS={sim:.2f} ≥ 0.75, D_JS={js_div:.2f})"
             )
-        elif s["score"] <= best_selected:
-            reason = f"điểm thấp hơn các câu đã chọn ({s['score']:.3f})"
+        elif s["score"] <= min_selected_score:
+            reason = f"xác suất sinh hậu nghiệm thấp hơn các câu đã chọn (Score={s['score']:.3f})"
         else:
             reason = (
-                f"bị loại do cân bằng MMR (cos với câu {sim_with + 1} = {sim:.2f})"
+                f"bị loại khi cân bằng JSD-MMR (Sim_JS với câu {sim_with + 1} = {sim:.2f})"
             )
         rejected.append(
             {
                 "sentence_index": s["sentence_index"],
                 "score": s["score"],
+                "js_divergence": round(js_div, 4),
                 "similarity": round(sim, 4),
                 "similar_with": sim_with,
                 "reason": reason,
@@ -329,7 +308,6 @@ def summarize_document(
     mmr_lambda=DEFAULT_MMR_LAMBDA,
     trace_iterations=(1,),
     dev_checks=False,
-    normalize_token_prob=False,
 ):
     """
     Chạy toàn bộ pipeline và trả về một dict JSON-serializable chứa dữ liệu
@@ -402,8 +380,7 @@ def summarize_document(
     ]
 
     # --- 5. Chấm điểm câu ---------------------------------------------
-    scores = score_sentences(model, docs_tokens, pi, lda_index_map, sentences,
-                             normalize_token_prob=normalize_token_prob)
+    scores = score_sentences(model, docs_tokens, pi, lda_index_map, sentences)
 
     # --- 6. Chọn câu bằng MMR ----------------------------------------
     selected, mmr_steps = select_sentences_mmr(
@@ -436,7 +413,6 @@ def summarize_document(
             "n_sentences": n_sentences,
             "mmr_lambda": mmr_lambda,
             "trace_iterations": wanted,
-            "normalize_token_prob": normalize_token_prob,
         },
         "input": {
             "text": (text or "").strip(),
